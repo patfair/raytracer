@@ -6,6 +6,7 @@
 *.dylib
 *.png
 .idea
+raytracer
 
 # Test binary, built with `go test -c`
 *.test

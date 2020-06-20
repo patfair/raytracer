@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"image"
+	"image/color"
 	"math"
 	"strings"
 )
@@ -11,6 +13,11 @@ type Camera struct {
 }
 
 func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizontalFovDeg float64) (*Camera, error) {
+	// Check for validity of dimensions.
+	if width <= 0 || height <= 0 {
+		return nil, errors.New("width and height must be positive numbers")
+	}
+
 	// Check for perpendicularity of view and up vectors.
 	if viewDirection.Dot(upDirection) != 0 {
 		return nil, errors.New("camera view and up direction vectors must be perpendicular")
@@ -37,6 +44,52 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 	}
 
 	return &Camera{Rays: rays}, nil
+}
+
+func (camera *Camera) Render(surfaces []Surface) *image.RGBA {
+	width := len(camera.Rays[0])
+	height := len(camera.Rays)
+	minDistance := math.MaxFloat64
+	maxDistance := float64(0)
+	distances := make([][]float64, len(camera.Rays))
+
+	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for y, row := range camera.Rays {
+		distances[y] = make([]float64, len(row))
+		for x, ray := range row {
+			closestDistance := float64(-1)
+			for _, surface := range surfaces {
+				distance := surface.Intersection(ray)
+				if distance > 0 {
+					if closestDistance < 0 || distance < closestDistance {
+						closestDistance = distance
+					}
+				}
+			}
+			distances[y][x] = closestDistance
+			if closestDistance > 0 {
+				if closestDistance < minDistance {
+					minDistance = closestDistance
+				}
+				if closestDistance > maxDistance {
+					maxDistance = closestDistance
+				}
+			}
+		}
+	}
+
+	for y, row := range distances {
+		for x, distance := range row {
+			red := 0
+			if distance > 0 {
+				red = int(255 * math.Pow((maxDistance - distance) / (maxDistance - minDistance), 2))
+			}
+
+			img.Set(x, y, color.RGBA{uint8(red), 0, 0, 255})
+		}
+	}
+
+	return img
 }
 
 func (camera Camera) String() string {
