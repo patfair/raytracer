@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const shadowBias = 0.01
+
 type Camera struct {
 	Rays [][]Ray
 }
@@ -65,6 +67,23 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 			if closestIntersection != nil {
 				var color Color
 				for _, light := range lights {
+					// Check if there is an object between the intersection point and the light source, in which case
+					// it should cast a shadow.
+					lightRay := Ray{Point: closestIntersection.Point, Vector: light.Direction().Multiply(-1)}
+					shadow := false
+					for _, surface := range surfaces {
+						if intersection := surface.Intersection(lightRay); intersection != nil {
+							// Require a minimum distance to avoid a surface from shadowing itself.
+							if intersection.Distance > shadowBias {
+								shadow = true
+								break
+							}
+						}
+					}
+					if shadow {
+						continue
+					}
+
 					incidentDotProduct := light.Direction().Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity() * math.Max(incidentDotProduct, 0)
 					color.R += closestSurface.Albedo().R / math.Pi * light.Color().R * incidentLight
