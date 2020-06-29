@@ -51,24 +51,22 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for y, row := range camera.Rays {
 		for x, ray := range row {
+			var closestIntersection *Intersection
 			var closestSurface Surface
-			closestDistance := float64(-1)
-			var closestNormal Vector
 			for _, surface := range surfaces {
-				distance, normal := surface.Intersection(ray)
-				if distance > 0 {
-					if closestDistance < 0 || distance < closestDistance {
+				if intersection := surface.Intersection(ray); intersection != nil {
+					if closestIntersection == nil || intersection.Distance < closestIntersection.Distance {
+						closestIntersection = intersection
 						closestSurface = surface
-						closestDistance = distance
-						closestNormal = normal
 					}
 				}
 			}
 
-			if closestDistance > 0 {
+			if closestIntersection != nil {
 				var color Color
 				for _, light := range lights {
-					incidentLight := light.Intensity() * math.Max(light.Direction().Multiply(-1).Dot(closestNormal), 0)
+					incidentDotProduct := light.Direction().Multiply(-1).Dot(closestIntersection.Normal)
+					incidentLight := light.Intensity() * math.Max(incidentDotProduct, 0)
 					color.R += closestSurface.Albedo().R / math.Pi * light.Color().R * incidentLight
 					color.G += closestSurface.Albedo().G / math.Pi * light.Color().G * incidentLight
 					color.B += closestSurface.Albedo().B / math.Pi * light.Color().B * incidentLight

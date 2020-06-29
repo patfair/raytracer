@@ -14,19 +14,19 @@ func (sphere Sphere) Albedo() Color {
 	return sphere.Color
 }
 
-func (sphere Sphere) Intersection(ray Ray) (float64, Vector) {
+func (sphere Sphere) Intersection(ray Ray) *Intersection {
 	rayOriginToSphereCenter := ray.Point.VectorTo(sphere.Point)
 	midpointDistance := ray.Vector.ToUnit().Dot(rayOriginToSphereCenter)
 	if midpointDistance < 0 {
 		// The sphere is behind the ray; there is no intersection.
-		return math.MinInt64, Vector{}
+		return nil
 	}
 
 	radiusSquared := sphere.Radius * sphere.Radius
 	rayDistanceSquared := rayOriginToSphereCenter.Dot(rayOriginToSphereCenter) - midpointDistance*midpointDistance
 	if rayDistanceSquared > radiusSquared {
 		// The ray passes outside the sphere.
-		return math.MinInt64, Vector{}
+		return nil
 	}
 
 	halfChordDistance := math.Sqrt(radiusSquared - rayDistanceSquared)
@@ -34,5 +34,9 @@ func (sphere Sphere) Intersection(ray Ray) (float64, Vector) {
 	closestIntersectionPoint := ray.Point.Translate(ray.Vector.ToUnit().Multiply(closestIntersectionDistance))
 	normal := sphere.Point.VectorTo(closestIntersectionPoint).ToUnit()
 
-	return closestIntersectionDistance, normal
+	return &Intersection{
+		Point:    closestIntersectionPoint,
+		Distance: closestIntersectionDistance,
+		Normal:   normal,
+	}
 }
