@@ -11,6 +11,8 @@ func main() {
 		Plane{Point{0, 0, 0}, Vector{1, 0, 0}, Color{1, 0, 0}},     // YZ plane
 		Plane{Point{0, 0, 0}, Vector{0, 1, 0}, Color{1, 1, 0}},     // XZ plane
 		Plane{Point{0, 0, 0}, Vector{0, 0, 1}, Color{0, 0.5, 0.5}}, // XY plane
+		Sphere{Point{1, 1, 1}, 0.25, Color{0.75, 0.5, 0}},
+		Sphere{Point{1, 5, 1}, 0.5, Color{1, 1, 1}},
 	}
 	lights := []Light{
 		DistantLight{Vector{-10, -10, -20}, Color{1, 1, 1}, 2},
