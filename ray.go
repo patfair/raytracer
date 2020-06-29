@@ -3,10 +3,10 @@ package main
 import "fmt"
 
 type Ray struct {
-	Point
-	Vector
+	Point     Point
+	Direction Vector
 }
 
 func (ray Ray) String() string {
-	return fmt.Sprintf("%v|%v", ray.Point, ray.Vector)
+	return fmt.Sprintf("%v|%v", ray.Point, ray.Direction)
 }

@@ -13,14 +13,14 @@ type Camera struct {
 	Rays [][]Ray
 }
 
-func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizontalFovDeg float64) (*Camera, error) {
+func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64) (*Camera, error) {
 	// Check for validity of dimensions.
 	if width <= 0 || height <= 0 {
 		return nil, errors.New("width and height must be positive numbers")
 	}
 
 	// Check for perpendicularity of view and up vectors.
-	if viewDirection.Dot(upDirection) != 0 {
+	if viewCenter.Direction.Dot(upDirection) != 0 {
 		return nil, errors.New("camera view and up direction vectors must be perpendicular")
 	}
 
@@ -28,8 +28,8 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 	halfHeight := float64(height) / 2
 	pixelSize := math.Tan(horizontalFovDeg*math.Pi/180/2) / halfWidth
 
-	uXyz := viewDirection.Cross(upDirection).ToUnit()
-	vXyz := viewDirection.ToUnit()
+	uXyz := viewCenter.Direction.Cross(upDirection).ToUnit()
+	vXyz := viewCenter.Direction.ToUnit()
 	wXyz := upDirection.ToUnit()
 
 	rays := make([][]Ray, height)
@@ -38,8 +38,8 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 		w := (float64(height-i-1) - halfHeight + 0.5) * pixelSize
 		for j := 0; j < width; j++ {
 			u := (float64(j) - halfWidth + 0.5) * pixelSize
-			rays[i][j].Point = viewDirection.Point
-			rays[i][j].Vector = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz)
+			rays[i][j].Point = viewCenter.Point
+			rays[i][j].Direction = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz)
 		}
 	}
 
@@ -70,8 +70,8 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 					// Check if there is an object between the intersection point and the light source, in which case
 					// it should cast a shadow.
 					lightRay := Ray{
-						Point:  closestIntersection.Point,
-						Vector: light.Direction(closestIntersection.Point).Multiply(-1),
+						Point:     closestIntersection.Point,
+						Direction: light.Direction(closestIntersection.Point).Multiply(-1),
 					}
 					shadow := false
 					for _, surface := range surfaces {

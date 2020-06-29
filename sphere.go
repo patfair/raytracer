@@ -5,9 +5,9 @@ import (
 )
 
 type Sphere struct {
-	Point
+	Center Point
 	Radius float64
-	Color
+	Color  Color
 }
 
 func (sphere Sphere) Albedo() Color {
@@ -15,8 +15,8 @@ func (sphere Sphere) Albedo() Color {
 }
 
 func (sphere Sphere) Intersection(ray Ray) *Intersection {
-	rayOriginToSphereCenter := ray.Point.VectorTo(sphere.Point)
-	midpointDistance := ray.Vector.ToUnit().Dot(rayOriginToSphereCenter)
+	rayOriginToSphereCenter := ray.Point.VectorTo(sphere.Center)
+	midpointDistance := ray.Direction.ToUnit().Dot(rayOriginToSphereCenter)
 	if midpointDistance < 0 {
 		// The sphere is behind the ray; there is no intersection.
 		return nil
@@ -31,8 +31,8 @@ func (sphere Sphere) Intersection(ray Ray) *Intersection {
 
 	halfChordDistance := math.Sqrt(radiusSquared - rayDistanceSquared)
 	closestIntersectionDistance := midpointDistance - halfChordDistance
-	closestIntersectionPoint := ray.Point.Translate(ray.Vector.ToUnit().Multiply(closestIntersectionDistance))
-	normal := sphere.Point.VectorTo(closestIntersectionPoint).ToUnit()
+	closestIntersectionPoint := ray.Point.Translate(ray.Direction.ToUnit().Multiply(closestIntersectionDistance))
+	normal := sphere.Center.VectorTo(closestIntersectionPoint).ToUnit()
 
 	return &Intersection{
 		Point:    closestIntersectionPoint,
