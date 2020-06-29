@@ -18,6 +18,7 @@ func main() {
 		DistantLight{Vector{-10, -10, -20}, Color{1, 1, 1}, 0.75},
 		DistantLight{Vector{-10, -10, -25}, Color{1, 1, 1}, 0.75},
 		DistantLight{Vector{-11, -9, -20}, Color{1, 1, 1}, 0.75},
+		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 5000},
 	}
 
 	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 1600, 900, 40)

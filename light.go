@@ -1,7 +1,8 @@
 package main
 
 type Light interface {
-	Direction() Vector
+	Direction(point Point) Vector
 	Color() Color
-	Intensity() float64
+	Intensity(point Point) float64
+	IsBlockedByIntersection(point Point, intersection *Intersection) bool
 }

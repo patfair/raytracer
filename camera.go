@@ -69,14 +69,19 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 				for _, light := range lights {
 					// Check if there is an object between the intersection point and the light source, in which case
 					// it should cast a shadow.
-					lightRay := Ray{Point: closestIntersection.Point, Vector: light.Direction().Multiply(-1)}
+					lightRay := Ray{
+						Point:  closestIntersection.Point,
+						Vector: light.Direction(closestIntersection.Point).Multiply(-1),
+					}
 					shadow := false
 					for _, surface := range surfaces {
 						if intersection := surface.Intersection(lightRay); intersection != nil {
 							// Require a minimum distance to avoid a surface from shadowing itself.
 							if intersection.Distance > shadowBias {
-								shadow = true
-								break
+								if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
+									shadow = true
+									break
+								}
 							}
 						}
 					}
@@ -84,8 +89,9 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 						continue
 					}
 
-					incidentDotProduct := light.Direction().Multiply(-1).Dot(closestIntersection.Normal)
-					incidentLight := light.Intensity() * math.Max(incidentDotProduct, 0)
+					incidentDotProduct :=
+						light.Direction(closestIntersection.Point).Multiply(-1).Dot(closestIntersection.Normal)
+					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0)
 					color.R += closestSurface.Albedo().R / math.Pi * light.Color().R * incidentLight
 					color.G += closestSurface.Albedo().G / math.Pi * light.Color().G * incidentLight
 					color.B += closestSurface.Albedo().B / math.Pi * light.Color().B * incidentLight
