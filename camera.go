@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"image"
-	"image/color"
 	"math"
 	"strings"
 )
@@ -25,8 +24,7 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 
 	halfWidth := float64(width) / 2
 	halfHeight := float64(height) / 2
-	pixelWidth := math.Tan(horizontalFovDeg*math.Pi/180/2) / halfWidth
-	pixelHeight := pixelWidth * halfHeight / halfWidth
+	pixelSize := math.Tan(horizontalFovDeg*math.Pi/180/2) / halfWidth
 
 	uXyz := viewDirection.Cross(upDirection).ToUnit()
 	vXyz := viewDirection.ToUnit()
@@ -35,9 +33,9 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 	rays := make([][]Ray, height)
 	for i := 0; i < height; i++ {
 		rays[i] = make([]Ray, width)
-		w := (float64(height-i-1) - halfHeight + 0.5) * pixelHeight
+		w := (float64(height-i-1) - halfHeight + 0.5) * pixelSize
 		for j := 0; j < width; j++ {
-			u := (float64(j) - halfWidth + 0.5) * pixelWidth
+			u := (float64(j) - halfWidth + 0.5) * pixelSize
 			rays[i][j].Point = viewDirection.Point
 			rays[i][j].Vector = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz)
 		}
@@ -46,46 +44,39 @@ func NewCamera(viewDirection Ray, upDirection Vector, width, height int, horizon
 	return &Camera{Rays: rays}, nil
 }
 
-func (camera *Camera) Render(surfaces []Surface) *image.RGBA {
+func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 	width := len(camera.Rays[0])
 	height := len(camera.Rays)
-	minDistance := math.MaxFloat64
-	maxDistance := float64(0)
-	distances := make([][]float64, len(camera.Rays))
 
 	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for y, row := range camera.Rays {
-		distances[y] = make([]float64, len(row))
 		for x, ray := range row {
+			var closestSurface Surface
 			closestDistance := float64(-1)
+			var closestNormal Vector
 			for _, surface := range surfaces {
-				distance := surface.Intersection(ray)
+				distance, normal := surface.Intersection(ray)
 				if distance > 0 {
 					if closestDistance < 0 || distance < closestDistance {
+						closestSurface = surface
 						closestDistance = distance
+						closestNormal = normal
 					}
 				}
 			}
-			distances[y][x] = closestDistance
+
 			if closestDistance > 0 {
-				if closestDistance < minDistance {
-					minDistance = closestDistance
+				var color Color
+				for _, light := range lights {
+					incidentLight := light.Intensity() * math.Max(light.Direction().Multiply(-1).Dot(closestNormal), 0)
+					color.R += closestSurface.Albedo().R / math.Pi * light.Color().R * incidentLight
+					color.G += closestSurface.Albedo().G / math.Pi * light.Color().G * incidentLight
+					color.B += closestSurface.Albedo().B / math.Pi * light.Color().B * incidentLight
 				}
-				if closestDistance > maxDistance {
-					maxDistance = closestDistance
-				}
-			}
-		}
-	}
 
-	for y, row := range distances {
-		for x, distance := range row {
-			red := 0
-			if distance > 0 {
-				red = int(255 * math.Pow((maxDistance - distance) / (maxDistance - minDistance), 2))
-			}
+				img.Set(x, y, color.ToRgba())
 
-			img.Set(x, y, color.RGBA{uint8(red), 0, 0, 255})
+			}
 		}
 	}
 

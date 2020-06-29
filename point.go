@@ -16,6 +16,14 @@ func (point Point) VectorTo(other Point) Vector {
 	}
 }
 
+func (point Point) Translate(vector Vector) Point {
+	return Point{
+		point.X + vector.X,
+		point.Y + vector.Y,
+		point.Z + vector.Z,
+	}
+}
+
 func (point Point) String() string {
 	return fmt.Sprintf("(%.2f, %.2f, %.2f)", point.X, point.Y, point.Z)
 }
