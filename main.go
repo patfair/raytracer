@@ -37,13 +37,15 @@ func main() {
 		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 1000},
 	}
 
+	scene := Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}
+
 	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 40, 2)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	img := camera.Render(surfaces, lights, Color{0.1, 0.8, 1})
+	img := camera.Render(&scene)
 
 	file, _ := os.Create("image.png")
 	png.Encode(file, img)
