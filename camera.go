@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/cheggaaa/pb/v3"
 	"image"
 	"math"
 	"strings"
@@ -55,6 +56,9 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor Color) *image.RGBA {
 	width := len(camera.Rays[0])
 	height := len(camera.Rays)
+
+	// Set up progress bar for the console.
+	bar := pb.StartNew(width * height)
 
 	pixels := make([][]Color, height)
 	for y, row := range camera.Rays {
@@ -110,6 +114,7 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor
 				pixelColor = color
 			}
 			pixels[y][x] = pixelColor
+			bar.Increment()
 		}
 	}
 
@@ -135,6 +140,7 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor
 		}
 	}
 
+	bar.Finish()
 	return img
 }
 
