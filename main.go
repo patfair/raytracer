@@ -37,7 +37,7 @@ func main() {
 		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 1000},
 	}
 
-	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 1600, 900, 40)
+	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 40, 2)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

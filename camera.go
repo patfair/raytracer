@@ -10,10 +10,12 @@ import (
 const shadowBias = 0.01
 
 type Camera struct {
-	Rays [][]Ray
+	Rays              [][]Ray
+	SupersampleFactor int
 }
 
-func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64) (*Camera, error) {
+func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64,
+	supersampleFactor int) (*Camera, error) {
 	// Check for validity of dimensions.
 	if width <= 0 || height <= 0 {
 		return nil, errors.New("width and height must be positive numbers")
@@ -23,6 +25,10 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	if viewCenter.Direction.Dot(upDirection) != 0 {
 		return nil, errors.New("camera view and up direction vectors must be perpendicular")
 	}
+
+	// Scale the dimensions for anti-aliasing supersampling.
+	width *= supersampleFactor
+	height *= supersampleFactor
 
 	halfWidth := float64(width) / 2
 	halfHeight := float64(height) / 2
@@ -43,15 +49,16 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 		}
 	}
 
-	return &Camera{Rays: rays}, nil
+	return &Camera{Rays: rays, SupersampleFactor: supersampleFactor}, nil
 }
 
 func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor Color) *image.RGBA {
 	width := len(camera.Rays[0])
 	height := len(camera.Rays)
 
-	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	pixels := make([][]Color, height)
 	for y, row := range camera.Rays {
+		pixels[y] = make([]Color, width)
 		for x, ray := range row {
 			var closestIntersection *Intersection
 			var closestSurface Surface
@@ -102,7 +109,29 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor
 				}
 				pixelColor = color
 			}
-			img.Set(x, y, pixelColor.ToRgba())
+			pixels[y][x] = pixelColor
+		}
+	}
+
+	finalWidth := width / camera.SupersampleFactor
+	finalHeight := height / camera.SupersampleFactor
+	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{finalWidth, finalHeight}})
+	for x := 0; x < finalWidth; x++ {
+		for y := 0; y < finalHeight; y++ {
+			var averagePixel Color
+			for i := 0; i < camera.SupersampleFactor; i++ {
+				for j := 0; j < camera.SupersampleFactor; j++ {
+					pixel := pixels[y*camera.SupersampleFactor+j][x*camera.SupersampleFactor+i]
+					averagePixel.R += pixel.R
+					averagePixel.G += pixel.G
+					averagePixel.B += pixel.B
+				}
+			}
+			numSamples := float64(camera.SupersampleFactor * camera.SupersampleFactor)
+			averagePixel.R /= numSamples
+			averagePixel.G /= numSamples
+			averagePixel.B /= numSamples
+			img.Set(x, y, averagePixel.ToRgba())
 		}
 	}
 
