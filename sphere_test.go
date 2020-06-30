@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 )
 
@@ -37,4 +38,30 @@ func TestSphereIntersection(t *testing.T) {
 	// Not intersecting
 	intersection = Sphere{Center: Point{0, 0, 0}, Radius: 1}.Intersection(Ray{Point{0, 0, 2}, Vector{1, 0, 0}})
 	assert.Nil(t, intersection)
+}
+
+func TestSphereToTextureCoordinates(t *testing.T) {
+	epsilon := 0.00001
+	sphere := Sphere{Center: Point{0, 0, 0}, Radius: 1, ZenithReference: Vector{0, 0, 1},
+		AzimuthReference: Vector{1, 0, 0}}
+
+	theta, phi := sphere.toTextureCoordinates(Point{1, 0, 0})
+	assert.Equal(t, 0.0, theta)
+	assert.Equal(t, math.Pi/2, phi)
+
+	theta, phi = sphere.toTextureCoordinates(Point{0, 0, 1})
+	assert.Equal(t, 0.0, theta)
+	assert.Equal(t, 0.0, phi)
+
+	theta, phi = sphere.toTextureCoordinates(Point{0, 0, -1})
+	assert.Equal(t, 0.0, theta)
+	assert.Equal(t, math.Pi, phi)
+
+	theta, phi = sphere.toTextureCoordinates(Point{0, -1, 1})
+	assert.Equal(t, -math.Pi/2, theta)
+	assert.InEpsilon(t, math.Pi/4, phi, epsilon)
+
+	theta, phi = sphere.toTextureCoordinates(Point{-1, 0, -1})
+	assert.Equal(t, math.Pi, theta)
+	assert.Equal(t, 3*math.Pi/4, phi)
 }

@@ -3,21 +3,29 @@ package main
 import (
 	"fmt"
 	"image/png"
+	"math"
 	"os"
 )
 
 func main() {
 	surfaces := []Surface{
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 0, 0}},  // YZ
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 1, 0}},  // XZ
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 10, 0}, Color: Color{0, 1, 1}}, // XY
-		Sphere{Point{1, 1, 1}, 0.25, Color{0.75, 0.5, 0}},
-		Sphere{Point{1, 5, 1}, 0.5, Color{1, 1, 1}},
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2},
+			Texture: CheckerboardTexture{Color{0.9, 0.1, 0.1}, Color{0.8, 0.8, 0.8}, 1, 0.5}}, // YZ plane
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2},
+			Texture: CheckerboardTexture{Color{0.2, 0.5, 1}, Color{0, 0, 0}, 0.1, 0.1}}, // XZ plane
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 10, 0},
+			Texture: CheckerboardTexture{Color{0.9, 0.9, 0.9}, Color{0.2, 0.2, 0.2}, 0.3, 0.3}}, // XY plane
+		Sphere{Center: Point{1, 1, 1}, Radius: 0.25, ZenithReference: Vector{0, 0, 1},
+			AzimuthReference: Vector{1, 0, 0},
+			Texture:          CheckerboardTexture{Color{1, 0, 1}, Color{1, 1, 1}, math.Pi / 4, math.Pi / 8}},
+		Sphere{Center: Point{1, 5, 1}, Radius: 0.5, ZenithReference: Vector{0, 1, 0},
+			AzimuthReference: Vector{1, 0, 0},
+			Texture:          CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4}},
 		Disc{Plane{Corner: Point{3, 1, 0.5}, Width: Vector{0.5, 0, 0}, Height: Vector{0, 1, 0},
-			Color: Color{0.3, 0.3, 0.3}}},
+			Texture: CheckerboardTexture{Color{1, 0, 0}, Color{0, 0, 1}, 0.25, 2 * math.Pi}}},
 	}
 	boxFront := Plane{Corner: Point{0.5, 3, 1}, Width: Vector{0.2, 0.2, 0.2}, Height: Vector{-0.1, -0.1, 0.2},
-		Color: Color{0, 1, 0.2}}
+		Texture: SolidTexture{Color{0, 1, 0.2}}}
 	for _, plane := range NewBox(boxFront, 0.2) {
 		surfaces = append(surfaces, plane)
 	}

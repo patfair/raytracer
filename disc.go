@@ -1,13 +1,11 @@
 package main
 
-import "math"
+import (
+	"math"
+)
 
 type Disc struct {
 	plane Plane
-}
-
-func (disc Disc) Albedo() Color {
-	return disc.plane.Albedo()
 }
 
 func (disc Disc) Intersection(ray Ray) *Intersection {
@@ -40,8 +38,25 @@ func (disc Disc) Intersection(ray Ray) *Intersection {
 	return intersection
 }
 
+func (disc Disc) AlbedoAt(point Point) Color {
+	r, phi := disc.toTextureCoordinates(point)
+	return disc.plane.Texture.AlbedoAt(r, phi)
+}
+
 func (disc Disc) Radius() float64 {
 	return disc.plane.Width.Norm()
+}
+
+func (disc Disc) toTextureCoordinates(point Point) (float64, float64) {
+	// Convert first to planar coordinates.
+	vector := disc.plane.Corner.VectorTo(point)
+	u := vector.Dot(disc.plane.Width.ToUnit())
+	v := vector.Dot(disc.plane.Height.ToUnit())
+
+	// Convert planar to polar coordinates.
+	r := math.Sqrt(u*u + v*v)
+	phi := math.Atan2(v, u)
+	return r, phi
 }
 
 func (disc Disc) isPointWithinLimits(point Point) bool {

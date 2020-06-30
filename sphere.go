@@ -5,13 +5,11 @@ import (
 )
 
 type Sphere struct {
-	Center Point
-	Radius float64
-	Color  Color
-}
-
-func (sphere Sphere) Albedo() Color {
-	return sphere.Color
+	Center           Point
+	Radius           float64
+	ZenithReference  Vector
+	AzimuthReference Vector
+	Texture          Texture
 }
 
 func (sphere Sphere) Intersection(ray Ray) *Intersection {
@@ -39,4 +37,26 @@ func (sphere Sphere) Intersection(ray Ray) *Intersection {
 		Distance: closestIntersectionDistance,
 		Normal:   normal,
 	}
+}
+
+func (sphere Sphere) AlbedoAt(point Point) Color {
+	theta, phi := sphere.toTextureCoordinates(point)
+	return sphere.Texture.AlbedoAt(theta, phi)
+}
+
+func (sphere Sphere) toTextureCoordinates(point Point) (float64, float64) {
+	// Convert first to rectangular coordinates relative to the zenith and azimuth.
+	vector := sphere.Center.VectorTo(point)
+	uDirection := sphere.AzimuthReference.ToUnit()
+	wDirection := sphere.ZenithReference.ToUnit()
+	vDirection := wDirection.Cross(uDirection)
+	u := vector.Dot(uDirection)
+	v := vector.Dot(vDirection)
+	w := vector.Dot(wDirection)
+
+	// Convert rectangular to spherical coordinates.
+	r := math.Sqrt(u*u + v*v + w*w)
+	theta := math.Atan2(v, u)
+	phi := math.Acos(w / r)
+	return theta, phi
 }

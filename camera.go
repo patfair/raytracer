@@ -93,9 +93,12 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor
 					incidentDotProduct :=
 						light.Direction(closestIntersection.Point).Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0)
-					color.R += closestSurface.Albedo().R / math.Pi * light.Color().R * incidentLight
-					color.G += closestSurface.Albedo().G / math.Pi * light.Color().G * incidentLight
-					color.B += closestSurface.Albedo().B / math.Pi * light.Color().B * incidentLight
+					color.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
+						incidentLight
+					color.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
+						incidentLight
+					color.B += closestSurface.AlbedoAt(closestIntersection.Point).B / math.Pi * light.Color().B *
+						incidentLight
 				}
 				pixelColor = color
 			}
