@@ -8,17 +8,19 @@ import (
 
 func main() {
 	surfaces := []Surface{
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 0, 0}}, // YZ
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 1, 0}}, // XZ
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 4, 0}, Color: Color{0, 1, 1}}, // XY
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 0, 0}},  // YZ
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 1, 0}},  // XZ
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 10, 0}, Color: Color{0, 1, 1}}, // XY
 		Sphere{Point{1, 1, 1}, 0.25, Color{0.75, 0.5, 0}},
 		Sphere{Point{1, 5, 1}, 0.5, Color{1, 1, 1}},
+		Disc{Plane{Corner: Point{3, 1, 0.5}, Width: Vector{0.5, 0, 0}, Height: Vector{0, 1, 0},
+			Color: Color{0.3, 0.3, 0.3}}},
 	}
 	lights := []Light{
 		DistantLight{Vector{-10, -10, -20}, Color{1, 1, 1}, 0.75},
 		DistantLight{Vector{-10, -10, -25}, Color{1, 1, 1}, 0.75},
 		DistantLight{Vector{-11, -9, -20}, Color{1, 1, 1}, 0.75},
-		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 5000},
+		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 1000},
 	}
 
 	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 1600, 900, 40)
