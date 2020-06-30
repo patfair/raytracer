@@ -46,7 +46,7 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	return &Camera{Rays: rays}, nil
 }
 
-func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
+func (camera *Camera) Render(surfaces []Surface, lights []Light, backgroundColor Color) *image.RGBA {
 	width := len(camera.Rays[0])
 	height := len(camera.Rays)
 
@@ -64,6 +64,7 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 				}
 			}
 
+			pixelColor := backgroundColor
 			if closestIntersection != nil {
 				var color Color
 				for _, light := range lights {
@@ -96,10 +97,9 @@ func (camera *Camera) Render(surfaces []Surface, lights []Light) *image.RGBA {
 					color.G += closestSurface.Albedo().G / math.Pi * light.Color().G * incidentLight
 					color.B += closestSurface.Albedo().B / math.Pi * light.Color().B * incidentLight
 				}
-
-				img.Set(x, y, color.ToRgba())
-
+				pixelColor = color
 			}
+			img.Set(x, y, pixelColor.ToRgba())
 		}
 	}
 

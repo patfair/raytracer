@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	img := camera.Render(surfaces, lights)
+	img := camera.Render(surfaces, lights, Color{0.1, 0.8, 1})
 
 	file, _ := os.Create("image.png")
 	png.Encode(file, img)
