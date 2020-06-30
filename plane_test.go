@@ -6,8 +6,8 @@ import (
 )
 
 func TestPlaneIntersection(t *testing.T) {
-	plane1 := Plane{Point: Point{0, 0, 0}, Normal: Vector{0, 0, 1}}
-	plane2 := Plane{Point: Point{0, 0, 0}, Normal: Vector{0, 0, -1}}
+	plane1 := Plane{Corner: Point{0, 0, 0}, Width: Vector{1, 0, 0}, Height: Vector{0, 1, 0}}
+	plane2 := Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 1, 0}, Height: Vector{1, 0, 0}}
 	ray1 := Ray{Point{0, 1, 1.5}, Vector{0, 0, -1}}
 	ray2 := Ray{Point{1, 0, 1.5}, Vector{0, 0, 1}}
 
@@ -33,10 +33,10 @@ func TestPlaneIntersection(t *testing.T) {
 }
 
 func TestPlaneIntersectionParallel(t *testing.T) {
-	plane1 := Plane{Point: Point{1, 2, 3}, Normal: Vector{0, 0, 1}}
-	plane2 := Plane{Point: Point{-1, 5, 10}, Normal: Vector{1, 1, 1}}
-	ray1 := Ray{Point{3, 20, -1.5}, Vector{0, -3, 0}}
-	ray2 := Ray{Point{9, 0, 13}, Vector{2, -1, -1}}
+	plane1 := Plane{Corner: Point{-50, -50, 0}, Width: Vector{100, 0, 0}, Height: Vector{0, 100, 0}}
+	plane2 := Plane{Corner: Point{50, -50, -50}, Width: Vector{-100, 100, 0}, Height: Vector{-100, -100, 100}}
+	ray1 := Ray{Point{0, 0, 0}, Vector{0, -3, 0}}
+	ray2 := Ray{Point{0, 0, 0}, Vector{2, -1, -1}}
 
 	intersection := plane1.Intersection(ray1)
 	assert.Nil(t, intersection)

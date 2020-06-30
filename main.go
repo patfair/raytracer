@@ -8,9 +8,9 @@ import (
 
 func main() {
 	surfaces := []Surface{
-		Plane{Point{0, 0, 0}, Vector{1, 0, 0}, Color{1, 0, 0}},     // YZ plane
-		Plane{Point{0, 0, 0}, Vector{0, 1, 0}, Color{1, 1, 0}},     // XZ plane
-		Plane{Point{0, 0, 0}, Vector{0, 0, 1}, Color{0, 0.5, 0.5}}, // XY plane
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 0, 0}}, // YZ
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2}, Color: Color{1, 1, 0}}, // XZ
+		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 4, 0}, Color: Color{0, 1, 1}}, // XY
 		Sphere{Point{1, 1, 1}, 0.25, Color{0.75, 0.5, 0}},
 		Sphere{Point{1, 5, 1}, 0.5, Color{1, 1, 1}},
 	}
