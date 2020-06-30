@@ -16,6 +16,12 @@ func main() {
 		Disc{Plane{Corner: Point{3, 1, 0.5}, Width: Vector{0.5, 0, 0}, Height: Vector{0, 1, 0},
 			Color: Color{0.3, 0.3, 0.3}}},
 	}
+	boxFront := Plane{Corner: Point{0.5, 3, 1}, Width: Vector{0.2, 0.2, 0.2}, Height: Vector{-0.1, -0.1, 0.2},
+		Color: Color{0, 1, 0.2}}
+	for _, plane := range NewBox(boxFront, 0.2) {
+		surfaces = append(surfaces, plane)
+	}
+
 	lights := []Light{
 		DistantLight{Vector{-10, -10, -20}, Color{1, 1, 1}, 0.75},
 		DistantLight{Vector{-10, -10, -25}, Color{1, 1, 1}, 0.75},
