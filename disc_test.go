@@ -7,7 +7,7 @@ import (
 )
 
 func TestDiscToTextureCoordinates(t *testing.T) {
-	disc := Disc{Plane{Point{1, 0, 5}, Vector{2, 0, 0}, Vector{0, 1, 0}, SolidTexture{Color{0, 0, 0}}}}
+	disc := Disc{Plane{Point{1, 0, 5}, Vector{2, 0, 0}, Vector{0, 1, 0}, SolidTexture{Color{0, 0, 0}}, 0}}
 
 	r, phi := disc.toTextureCoordinates(Point{2, 0, 5})
 	assert.Equal(t, 1.0, r)

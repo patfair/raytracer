@@ -10,7 +10,6 @@ import (
 
 const (
 	parallelism = 5
-	shadowBias  = 0.01
 )
 
 type Camera struct {
@@ -49,7 +48,7 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 		for j := 0; j < width; j++ {
 			u := (float64(j) - halfWidth + 0.5) * pixelSize
 			rays[i][j].Point = viewCenter.Point
-			rays[i][j].Direction = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz)
+			rays[i][j].Direction = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz).ToUnit()
 		}
 	}
 

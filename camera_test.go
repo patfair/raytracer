@@ -11,10 +11,10 @@ func TestNewCameraXY(t *testing.T) {
 	camera, err := NewCamera(viewDirection, upDirection, 2, 2, 90, 1)
 	assert.Nil(t, err)
 	if assert.Equal(t, 2, len(camera.Rays)) && assert.Equal(t, 2, len(camera.Rays[0])) {
-		assert.Equal(t, Ray{viewDirection.Point, Vector{-0.5, 0.5, -1}}, camera.Rays[0][0])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{0.5, 0.5, -1}}, camera.Rays[0][1])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{-0.5, -0.5, -1}}, camera.Rays[1][0])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{0.5, -0.5, -1}}, camera.Rays[1][1])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{-0.5, 0.5, -1}.ToUnit()}, camera.Rays[0][0])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{0.5, 0.5, -1}.ToUnit()}, camera.Rays[0][1])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{-0.5, -0.5, -1}.ToUnit()}, camera.Rays[1][0])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{0.5, -0.5, -1}.ToUnit()}, camera.Rays[1][1])
 	}
 }
 
@@ -24,10 +24,10 @@ func TestNewCameraRotated(t *testing.T) {
 	camera, err := NewCamera(viewDirection, upDirection, 2, 2, 90, 1)
 	assert.Nil(t, err)
 	if assert.Equal(t, 2, len(camera.Rays)) && assert.Equal(t, 2, len(camera.Rays[0])) {
-		assert.Equal(t, Ray{viewDirection.Point, Vector{1, -0.5, 0.5}}, camera.Rays[0][0])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{1, -0.5, -0.5}}, camera.Rays[0][1])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{1, 0.5, 0.5}}, camera.Rays[1][0])
-		assert.Equal(t, Ray{viewDirection.Point, Vector{1, 0.5, -0.5}}, camera.Rays[1][1])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{1, -0.5, 0.5}.ToUnit()}, camera.Rays[0][0])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{1, -0.5, -0.5}.ToUnit()}, camera.Rays[0][1])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{1, 0.5, 0.5}.ToUnit()}, camera.Rays[1][0])
+		assert.Equal(t, Ray{viewDirection.Point, Vector{1, 0.5, -0.5}.ToUnit()}, camera.Rays[1][1])
 	}
 }
 

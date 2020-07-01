@@ -15,18 +15,22 @@ func main() {
 			Texture: CheckerboardTexture{Color{0.2, 0.5, 1}, Color{0, 0, 0}, 0.1, 0.1}}, // XZ plane
 		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 10, 0},
 			Texture: CheckerboardTexture{Color{0.9, 0.9, 0.9}, Color{0.2, 0.2, 0.2}, 0.3, 0.3}}, // XY plane
-		Sphere{Center: Point{1, 1, 1}, Radius: 0.25, ZenithReference: Vector{0, 0, 1},
+		Sphere{Center: Point{1.5, 1.5, 0.75}, Radius: 0.5, ZenithReference: Vector{0, 0, 1},
 			AzimuthReference: Vector{1, 0, 0},
-			Texture:          CheckerboardTexture{Color{1, 0, 1}, Color{1, 1, 1}, math.Pi / 4, math.Pi / 8}},
-		Sphere{Center: Point{1, 5, 1}, Radius: 0.5, ZenithReference: Vector{0, 1, 0},
+			Texture:          SolidTexture{Color{0.5, 0.5, 0.5}},
+			reflection:       0.8},
+		Sphere{Center: Point{2, 5, 1}, Radius: 0.3, ZenithReference: Vector{0, 1, 0},
 			AzimuthReference: Vector{1, 0, 0},
-			Texture:          CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4}},
+			Texture:          CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4},
+			reflection:       0.3},
 		Disc{Plane{Corner: Point{3, 1, 0.5}, Width: Vector{0.5, 0, 0}, Height: Vector{0, 1, 0},
 			Texture: CheckerboardTexture{Color{1, 0, 0}, Color{0, 0, 1}, 0.25, 2 * math.Pi}}},
+		Disc{Plane{Corner: Point{2, 2, 0.1}, Width: Vector{1.5, 0, 0}, Height: Vector{0, 1, 0},
+			Texture: SolidTexture{Color{0, 0, 0}}, reflection: 0.7}},
 	}
-	boxFront := Plane{Corner: Point{0.5, 3, 1}, Width: Vector{0.2, 0.2, 0.2}, Height: Vector{-0.1, -0.1, 0.2},
-		Texture: SolidTexture{Color{0, 1, 0.2}}}
-	for _, plane := range NewBox(boxFront, 0.2) {
+	boxFront := Plane{Corner: Point{1, 3, 0.75}, Width: Vector{0, 0.5, 0.5}, Height: Vector{0, -0.5, 0.5},
+		Texture: SolidTexture{Color{0.9, 0.6, 0.2}}, reflection: 0.1}
+	for _, plane := range NewBox(boxFront, 0.5) {
 		surfaces = append(surfaces, plane)
 	}
 
