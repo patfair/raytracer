@@ -51,6 +51,10 @@ func (disc Disc) Reflection() float64 {
 	return disc.plane.reflection
 }
 
+func (disc Disc) Refraction() float64 {
+	return disc.plane.refraction
+}
+
 func (disc Disc) toTextureCoordinates(point Point) (float64, float64) {
 	// Convert first to planar coordinates.
 	vector := disc.plane.Corner.VectorTo(point)

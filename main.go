@@ -19,7 +19,7 @@ func main() {
 			AzimuthReference: Vector{1, 0, 0},
 			Texture:          SolidTexture{Color{0.5, 0.5, 0.5}},
 			reflection:       0.8},
-		Sphere{Center: Point{2, 5, 1}, Radius: 0.3, ZenithReference: Vector{0, 1, 0},
+		Sphere{Center: Point{1, 4.4, 1}, Radius: 0.3, ZenithReference: Vector{0, 1, 0},
 			AzimuthReference: Vector{1, 0, 0},
 			Texture:          CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4},
 			reflection:       0.3},
@@ -28,9 +28,14 @@ func main() {
 		Disc{Plane{Corner: Point{2, 2, 0.1}, Width: Vector{1.5, 0, 0}, Height: Vector{0, 1, 0},
 			Texture: SolidTexture{Color{0, 0, 0}}, reflection: 0.7}},
 	}
-	boxFront := Plane{Corner: Point{1, 3, 0.75}, Width: Vector{0, 0.5, 0.5}, Height: Vector{0, -0.5, 0.5},
+	cubeFront := Plane{Corner: Point{1, 3, 0.75}, Width: Vector{0, 0.5, 0.5}, Height: Vector{0, -0.5, 0.5},
 		Texture: SolidTexture{Color{0.9, 0.6, 0.2}}, reflection: 0.1}
-	for _, plane := range NewBox(boxFront, 0.5) {
+	for _, plane := range NewBox(cubeFront, 0.5) {
+		surfaces = append(surfaces, plane)
+	}
+	boxFront := Plane{Corner: Point{2.5, 4.3, 0.1}, Width: Vector{-0.8, 0.6, 0}, Height: Vector{0, 0, 2},
+		Texture: SolidTexture{Color{0, 0, 0}}, refraction: 1.1}
+	for _, plane := range NewBox(boxFront, 0.05) {
 		surfaces = append(surfaces, plane)
 	}
 
@@ -43,7 +48,8 @@ func main() {
 
 	scene := Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}
 
-	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 40, 2)
+	//camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 40, 2)
+	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 1920, 1080, 40, 1)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

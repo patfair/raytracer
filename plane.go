@@ -6,6 +6,7 @@ type Plane struct {
 	Height     Vector
 	Texture    Texture
 	reflection float64
+	refraction float64
 }
 
 func (plane Plane) Normal() Vector {
@@ -49,6 +50,10 @@ func (plane Plane) AlbedoAt(point Point) Color {
 
 func (plane Plane) Reflection() float64 {
 	return plane.reflection
+}
+
+func (plane Plane) Refraction() float64 {
+	return plane.refraction
 }
 
 func (plane Plane) toTextureCoordinates(point Point) (float64, float64) {
