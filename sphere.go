@@ -10,8 +10,9 @@ type Sphere struct {
 	ZenithReference  Vector
 	AzimuthReference Vector
 	Texture          Texture
-	reflection       float64
-	refraction       float64
+	opacity          float64
+	reflectivity     float64
+	refractiveIndex  float64
 }
 
 func (sphere Sphere) Intersection(ray Ray) *Intersection {
@@ -46,12 +47,16 @@ func (sphere Sphere) AlbedoAt(point Point) Color {
 	return sphere.Texture.AlbedoAt(theta, phi)
 }
 
-func (sphere Sphere) Reflection() float64 {
-	return sphere.reflection
+func (sphere Sphere) Opacity() float64 {
+	return sphere.opacity
 }
 
-func (sphere Sphere) Refraction() float64 {
-	return sphere.refraction
+func (sphere Sphere) Reflectivity() float64 {
+	return sphere.reflectivity
+}
+
+func (sphere Sphere) RefractiveIndex() float64 {
+	return sphere.refractiveIndex
 }
 
 func (sphere Sphere) toTextureCoordinates(point Point) (float64, float64) {

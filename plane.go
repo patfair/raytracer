@@ -1,12 +1,13 @@
 package main
 
 type Plane struct {
-	Corner     Point
-	Width      Vector
-	Height     Vector
-	Texture    Texture
-	reflection float64
-	refraction float64
+	Corner          Point
+	Width           Vector
+	Height          Vector
+	Texture         Texture
+	opacity         float64
+	reflectivity    float64
+	refractiveIndex float64
 }
 
 func (plane Plane) Normal() Vector {
@@ -48,12 +49,16 @@ func (plane Plane) AlbedoAt(point Point) Color {
 	return plane.Texture.AlbedoAt(u, v)
 }
 
-func (plane Plane) Reflection() float64 {
-	return plane.reflection
+func (plane Plane) Opacity() float64 {
+	return plane.opacity
 }
 
-func (plane Plane) Refraction() float64 {
-	return plane.refraction
+func (plane Plane) Reflectivity() float64 {
+	return plane.reflectivity
+}
+
+func (plane Plane) RefractiveIndex() float64 {
+	return plane.refractiveIndex
 }
 
 func (plane Plane) toTextureCoordinates(point Point) (float64, float64) {
