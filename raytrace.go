@@ -113,25 +113,25 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 					Point:     closestIntersection.Point,
 					Direction: light.Direction(closestIntersection.Point).Multiply(-1),
 				}
-				shadow := false
+				transparency := 1.0
 				for _, surface := range scene.Surfaces {
 					if intersection := surface.Intersection(lightRay); intersection != nil {
 						// Require a minimum distance to avoid a surface from shadowing itself.
 						if intersection.Distance > shadowBias {
 							if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
-								shadow = true
-								break
+								transparency *= 1 - surface.Opacity()
 							}
 						}
 					}
 				}
-				if shadow {
+				if transparency == 0 {
 					continue
 				}
 
 				incidentDotProduct :=
 					light.Direction(closestIntersection.Point).Multiply(-1).Dot(closestIntersection.Normal)
-				incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0)
+				incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
+					transparency
 				diffuseColor.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
 					incidentLight
 				diffuseColor.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
