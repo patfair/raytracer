@@ -141,7 +141,7 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 					incidentLight
 
 				// Calculate specular reflection.
-				specularIntensity := math.Pow(reflectedDirection.Dot(lightRay.Direction),
+				specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
 					shadingProperties.SpecularExponent)
 				specularColor.R += light.Color().R * specularIntensity
 				specularColor.G += light.Color().G * specularIntensity
