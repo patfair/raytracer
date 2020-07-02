@@ -1,13 +1,10 @@
 package main
 
 type Plane struct {
-	Corner          Point
-	Width           Vector
-	Height          Vector
-	Texture         Texture
-	opacity         float64
-	reflectivity    float64
-	refractiveIndex float64
+	Corner            Point
+	Width             Vector
+	Height            Vector
+	shadingProperties ShadingProperties
 }
 
 func (plane Plane) Normal() Vector {
@@ -46,19 +43,11 @@ func (plane Plane) Intersection(ray Ray) *Intersection {
 
 func (plane Plane) AlbedoAt(point Point) Color {
 	u, v := plane.toTextureCoordinates(point)
-	return plane.Texture.AlbedoAt(u, v)
+	return plane.shadingProperties.DiffuseTexture.AlbedoAt(u, v)
 }
 
-func (plane Plane) Opacity() float64 {
-	return plane.opacity
-}
-
-func (plane Plane) Reflectivity() float64 {
-	return plane.reflectivity
-}
-
-func (plane Plane) RefractiveIndex() float64 {
-	return plane.refractiveIndex
+func (plane Plane) ShadingProperties() ShadingProperties {
+	return plane.shadingProperties
 }
 
 func (plane Plane) toTextureCoordinates(point Point) (float64, float64) {

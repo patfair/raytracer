@@ -9,35 +9,130 @@ import (
 
 func main() {
 	surfaces := []Surface{
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{0, 4, 0}, Height: Vector{0, 0, 2},
-			Texture: CheckerboardTexture{Color{0.9, 0.1, 0.1}, Color{0.8, 0.8, 0.8}, 1, 0.5}, opacity: 1}, // YZ plane
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 0, 2},
-			Texture: CheckerboardTexture{Color{0.2, 0.5, 1}, Color{0, 0, 0}, 0.1, 0.1}, opacity: 1}, // XZ plane
-		Plane{Corner: Point{0, 0, 0}, Width: Vector{4, 0, 0}, Height: Vector{0, 10, 0},
-			Texture: CheckerboardTexture{Color{0.9, 0.9, 0.9}, Color{0.2, 0.2, 0.2}, 0.3, 0.3}, opacity: 1}, // XY plane
-		Sphere{Center: Point{1.5, 1.5, 0.75}, Radius: 0.5, ZenithReference: Vector{0, 0, 1},
-			AzimuthReference: Vector{1, 0, 0},
-			Texture:          SolidTexture{Color{0.5, 0.5, 0.5}},
-			opacity:          1,
-			reflectivity:     0.8},
-		Sphere{Center: Point{1, 4.4, 1}, Radius: 0.3, ZenithReference: Vector{0, 1, 0},
-			AzimuthReference: Vector{1, 0, 0},
-			Texture:          CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4},
-			opacity:          1,
-			reflectivity:     0.3},
-		Disc{Plane{Corner: Point{3, 1, 0.5}, Width: Vector{0.5, 0, 0}, Height: Vector{0, 1, 0},
-			Texture: CheckerboardTexture{Color{1, 0, 0}, Color{0, 0, 1}, 0.25, 2 * math.Pi}, opacity: 1},
+		// YZ plane
+		Plane{
+			Corner: Point{0, 0, 0},
+			Width:  Vector{0, 4, 0},
+			Height: Vector{0, 0, 2},
+			shadingProperties: ShadingProperties{
+				DiffuseTexture: CheckerboardTexture{Color{0.9, 0.1, 0.1}, Color{0.8, 0.8, 0.8}, 1, 0.5},
+				Opacity:        1,
+			},
 		},
-		Disc{Plane{Corner: Point{2, 2, 0.1}, Width: Vector{1.5, 0, 0}, Height: Vector{0, 1, 0},
-			Texture: SolidTexture{Color{0, 0, 0}}, opacity: 1, reflectivity: 0.7}},
+
+		// XZ plane
+		Plane{
+			Corner: Point{0, 0, 0},
+			Width:  Vector{4, 0, 0},
+			Height: Vector{0, 0, 2},
+			shadingProperties: ShadingProperties{
+				DiffuseTexture: CheckerboardTexture{Color{0.2, 0.5, 1}, Color{0, 0, 0}, 0.1, 0.1},
+				Opacity:        1,
+			},
+		},
+
+		// XY plane
+		Plane{
+			Corner: Point{0, 0, 0},
+			Width:  Vector{4, 0, 0},
+			Height: Vector{0, 10, 0},
+			shadingProperties: ShadingProperties{
+				DiffuseTexture: CheckerboardTexture{Color{0.9, 0.9, 0.9}, Color{0.2, 0.2, 0.2}, 0.3, 0.3},
+				Opacity:        1,
+			},
+		},
+
+		// Mirror sphere
+		Sphere{
+			Center:           Point{1.5, 1.5, 0.75},
+			Radius:           0.5,
+			ZenithReference:  Vector{0, 0, 1},
+			AzimuthReference: Vector{1, 0, 0},
+			shadingProperties: ShadingProperties{
+				DiffuseTexture:    SolidTexture{Color{0.5, 0.5, 0.5}},
+				SpecularExponent:  100,
+				SpecularIntensity: 0.5,
+				Opacity:           1,
+				Reflectivity:      0.8,
+			},
+		},
+
+		// Checkerboard sphere
+		Sphere{
+			Center:           Point{1, 4.4, 1},
+			Radius:           0.3,
+			ZenithReference:  Vector{0, 1, 0},
+			AzimuthReference: Vector{1, 0, 0},
+			shadingProperties: ShadingProperties{
+				DiffuseTexture:    CheckerboardTexture{Color{1, 1, 1}, Color{0, 0, 1}, math.Pi / 2, math.Pi / 4},
+				SpecularExponent:  100,
+				SpecularIntensity: 0.5,
+				Opacity:           1,
+				Reflectivity:      0.3,
+			},
+		},
+
+		// Checkerboard disc
+		Disc{
+			plane: Plane{
+				Corner: Point{3, 1, 0.5},
+				Width:  Vector{0.5, 0, 0},
+				Height: Vector{0, 1, 0},
+				shadingProperties: ShadingProperties{
+					DiffuseTexture: CheckerboardTexture{Color{0.9, 0.8, 0.4}, Color{0.3, 0.3, 0}, 0.125, math.Pi / 2},
+					Opacity:        1,
+				},
+			},
+		},
+
+		// Mirror disc
+		Disc{
+			plane: Plane{
+				Corner: Point{2, 2, 0.1},
+				Width:  Vector{1.5, 0, 0},
+				Height: Vector{0, 1, 0},
+				shadingProperties: ShadingProperties{
+					DiffuseTexture:    SolidTexture{Color{0, 0, 0}},
+					SpecularExponent:  100,
+					SpecularIntensity: 0.5,
+					Opacity:           1,
+					Reflectivity:      0.7,
+				},
+			},
+		},
 	}
-	cubeFront := Plane{Corner: Point{1, 3, 0.75}, Width: Vector{0, 0.5, 0.5}, Height: Vector{0, -0.5, 0.5},
-		Texture: SolidTexture{Color{0.9, 0.6, 0.2}}, opacity: 1, reflectivity: 0.1}
+
+	// Gold cube
+	cubeFront := Plane{
+		Corner: Point{1, 3, 0.75},
+		Width:  Vector{0, 0.5, 0.5},
+		Height: Vector{0, -0.5, 0.5},
+		shadingProperties: ShadingProperties{
+			DiffuseTexture:    SolidTexture{Color{0.9, 0.6, 0.2}},
+			SpecularExponent:  100,
+			SpecularIntensity: 0.5,
+			Opacity:           1,
+			Reflectivity:      0.1,
+		},
+	}
 	for _, plane := range NewBox(cubeFront, 0.5) {
 		surfaces = append(surfaces, plane)
 	}
-	boxFront := Plane{Corner: Point{2.5, 4.3, 0.1}, Width: Vector{-0.8, 0.6, 0}, Height: Vector{0, 0, 2},
-		Texture: SolidTexture{Color{0, 1, 0}}, opacity: 0.1, reflectivity: 0.5, refractiveIndex: 1.1}
+
+	// Glass panel
+	boxFront := Plane{
+		Corner: Point{2.5, 4.3, 0.1},
+		Width:  Vector{-0.8, 0.6, 0},
+		Height: Vector{0, 0, 2},
+		shadingProperties: ShadingProperties{
+			DiffuseTexture:    SolidTexture{Color{0, 1, 0}},
+			SpecularExponent:  100,
+			SpecularIntensity: 0.5,
+			Opacity:           0.1,
+			Reflectivity:      0.5,
+			RefractiveIndex:   1.1,
+		},
+	}
 	for _, plane := range NewBox(boxFront, 0.05) {
 		surfaces = append(surfaces, plane)
 	}
@@ -51,7 +146,7 @@ func main() {
 
 	scene := Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}
 
-	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 40, 2)
+	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 30, 2)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

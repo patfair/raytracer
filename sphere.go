@@ -5,14 +5,11 @@ import (
 )
 
 type Sphere struct {
-	Center           Point
-	Radius           float64
-	ZenithReference  Vector
-	AzimuthReference Vector
-	Texture          Texture
-	opacity          float64
-	reflectivity     float64
-	refractiveIndex  float64
+	Center            Point
+	Radius            float64
+	ZenithReference   Vector
+	AzimuthReference  Vector
+	shadingProperties ShadingProperties
 }
 
 func (sphere Sphere) Intersection(ray Ray) *Intersection {
@@ -44,19 +41,11 @@ func (sphere Sphere) Intersection(ray Ray) *Intersection {
 
 func (sphere Sphere) AlbedoAt(point Point) Color {
 	theta, phi := sphere.toTextureCoordinates(point)
-	return sphere.Texture.AlbedoAt(theta, phi)
+	return sphere.shadingProperties.DiffuseTexture.AlbedoAt(theta, phi)
 }
 
-func (sphere Sphere) Opacity() float64 {
-	return sphere.opacity
-}
-
-func (sphere Sphere) Reflectivity() float64 {
-	return sphere.reflectivity
-}
-
-func (sphere Sphere) RefractiveIndex() float64 {
-	return sphere.refractiveIndex
+func (sphere Sphere) ShadingProperties() ShadingProperties {
+	return sphere.shadingProperties
 }
 
 func (sphere Sphere) toTextureCoordinates(point Point) (float64, float64) {

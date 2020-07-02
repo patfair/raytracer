@@ -53,15 +53,17 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 	}
 
 	if closestIntersection != nil {
-		kRefraction := 1 - closestSurface.Opacity()
-		kReflection := closestSurface.Reflectivity() * closestSurface.Opacity()
+		shadingProperties := closestSurface.ShadingProperties()
+		kRefraction := 1 - shadingProperties.Opacity
+		kReflection := shadingProperties.Reflectivity * shadingProperties.Opacity
 		kDiffuse := 1 - kRefraction - kReflection
-		var refractedColor, reflectedColor, diffuseColor Color
+		kSpecular := shadingProperties.SpecularIntensity
+		var refractedColor, reflectedColor, diffuseColor, specularColor Color
 
 		if kRefraction > 0 {
 			cosIn := -closestIntersection.Normal.Dot(ray.Direction)
 			etaIn := refractionIndex
-			etaOut := closestSurface.RefractiveIndex()
+			etaOut := shadingProperties.RefractiveIndex
 			if refractionIndex > 1 {
 				// If the previous refraction index isn't 1, the ray is exiting the material instead of entering.
 				etaIn, etaOut = etaOut, etaIn
@@ -91,13 +93,12 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 				closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(-reflectionBias))
 
 			refractedRay := Ray{refractionPoint, refractionDirection.ToUnit()}
-			refractedColor = castRay(scene, refractedRay, depth+1, closestSurface.RefractiveIndex())
+			refractedColor = castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex)
 		}
 
+		reflectedDirection := ray.Direction.Add(
+			closestIntersection.Normal.Multiply(-2 * closestIntersection.Normal.Dot(ray.Direction))).ToUnit()
 		if kReflection > 0 {
-			reflectedDirection :=
-				ray.Direction.Add(closestIntersection.Normal.Multiply(-2 * closestIntersection.Normal.Dot(ray.Direction)))
-
 			// Bias the intersection point off the surface slightly to avoid immediate self-intersection.
 			reflectedPoint := closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(reflectionBias))
 
@@ -105,13 +106,13 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 			reflectedColor = castRay(scene, reflectedRay, depth+1, refractionIndex)
 		}
 
-		if kDiffuse > 0 {
+		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
 				// Check if there is an object between the intersection point and the light source, in which case
 				// it should cast a shadow.
 				lightRay := Ray{
 					Point:     closestIntersection.Point,
-					Direction: light.Direction(closestIntersection.Point).Multiply(-1),
+					Direction: light.Direction(closestIntersection.Point).Multiply(-1).ToUnit(),
 				}
 				transparency := 1.0
 				for _, surface := range scene.Surfaces {
@@ -119,7 +120,7 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 						// Require a minimum distance to avoid a surface from shadowing itself.
 						if intersection.Distance > shadowBias {
 							if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
-								transparency *= 1 - surface.Opacity()
+								transparency *= 1 - surface.ShadingProperties().Opacity
 							}
 						}
 					}
@@ -138,12 +139,22 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 					incidentLight
 				diffuseColor.B += closestSurface.AlbedoAt(closestIntersection.Point).B / math.Pi * light.Color().B *
 					incidentLight
+
+				// Calculate specular reflection.
+				specularIntensity := math.Pow(reflectedDirection.Dot(lightRay.Direction),
+					shadingProperties.SpecularExponent)
+				specularColor.R += light.Color().R * specularIntensity
+				specularColor.G += light.Color().G * specularIntensity
+				specularColor.B += light.Color().B * specularIntensity
 			}
 		}
 
-		pixelColor.R = kRefraction*refractedColor.R + kReflection*reflectedColor.R + kDiffuse*diffuseColor.R
-		pixelColor.G = kRefraction*refractedColor.G + kReflection*reflectedColor.G + kDiffuse*diffuseColor.G
-		pixelColor.B = kRefraction*refractedColor.B + kReflection*reflectedColor.B + kDiffuse*diffuseColor.B
+		pixelColor.R = kRefraction*refractedColor.R + kReflection*reflectedColor.R + kDiffuse*diffuseColor.R +
+			kSpecular*specularColor.R
+		pixelColor.G = kRefraction*refractedColor.G + kReflection*reflectedColor.G + kDiffuse*diffuseColor.G +
+			kSpecular*specularColor.G
+		pixelColor.B = kRefraction*refractedColor.B + kReflection*reflectedColor.B + kDiffuse*diffuseColor.B +
+			kSpecular*specularColor.B
 	}
 
 	return pixelColor

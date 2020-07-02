@@ -9,16 +9,11 @@ func NewBox(plane Plane, depth float64) [6]Plane {
 	backTopRight := frontBottomLeft.Translate(widthVector).Translate(heightVector).Translate(depthVector)
 
 	front := plane
-	bottom := Plane{frontBottomLeft, depthVector, widthVector, plane.Texture, plane.opacity, plane.reflectivity,
-		plane.refractiveIndex}
-	left := Plane{frontBottomLeft, depthVector, heightVector, plane.Texture, plane.opacity, plane.reflectivity,
-		plane.refractiveIndex}
-	back := Plane{backTopRight, widthVector.Multiply(-1), heightVector.Multiply(-1), plane.Texture, plane.opacity,
-		plane.reflectivity, plane.refractiveIndex}
-	top := Plane{backTopRight, depthVector.Multiply(-1), widthVector.Multiply(-1), plane.Texture, plane.opacity,
-		plane.reflectivity, plane.refractiveIndex}
-	right := Plane{backTopRight, depthVector.Multiply(-1), heightVector.Multiply(-1), plane.Texture, plane.opacity,
-		plane.reflectivity, plane.refractiveIndex}
+	bottom := Plane{frontBottomLeft, depthVector, widthVector, plane.shadingProperties}
+	left := Plane{frontBottomLeft, depthVector, heightVector, plane.shadingProperties}
+	back := Plane{backTopRight, widthVector.Multiply(-1), heightVector.Multiply(-1), plane.shadingProperties}
+	top := Plane{backTopRight, depthVector.Multiply(-1), widthVector.Multiply(-1), plane.shadingProperties}
+	right := Plane{backTopRight, depthVector.Multiply(-1), heightVector.Multiply(-1), plane.shadingProperties}
 
 	return [6]Plane{front, bottom, left, back, top, right}
 }

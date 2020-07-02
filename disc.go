@@ -40,23 +40,15 @@ func (disc Disc) Intersection(ray Ray) *Intersection {
 
 func (disc Disc) AlbedoAt(point Point) Color {
 	r, phi := disc.toTextureCoordinates(point)
-	return disc.plane.Texture.AlbedoAt(r, phi)
+	return disc.plane.ShadingProperties().DiffuseTexture.AlbedoAt(r, phi)
 }
 
 func (disc Disc) Radius() float64 {
 	return disc.plane.Width.Norm()
 }
 
-func (disc Disc) Opacity() float64 {
-	return disc.plane.Opacity()
-}
-
-func (disc Disc) Reflectivity() float64 {
-	return disc.plane.Reflectivity()
-}
-
-func (disc Disc) RefractiveIndex() float64 {
-	return disc.plane.RefractiveIndex()
+func (disc Disc) ShadingProperties() ShadingProperties {
+	return disc.plane.ShadingProperties()
 }
 
 func (disc Disc) toTextureCoordinates(point Point) (float64, float64) {
