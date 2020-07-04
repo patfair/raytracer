@@ -133,10 +133,31 @@ func AllElementsScene() Scene {
 	}
 
 	lights := []Light{
-		DistantLight{Vector{-10, -10, -20}, Color{1, 1, 1}, 0.75},
-		DistantLight{Vector{-10, -10, -25}, Color{1, 1, 1}, 0.75},
-		DistantLight{Vector{-11, -9, -20}, Color{1, 1, 1}, 0.75},
-		PointLight{Point{5, 1, 10}, Color{1, 1, 1}, 1000},
+		DistantLight{
+			direction:  Vector{-10, -10, -20},
+			color:      Color{1, 1, 1},
+			intensity:  0.75,
+			numSamples: 1,
+		},
+		DistantLight{
+			direction:  Vector{-10, -10, -25},
+			color:      Color{1, 1, 1},
+			intensity:  0.75,
+			numSamples: 1,
+		},
+		DistantLight{
+			direction:  Vector{-11, -9, -20},
+			color:      Color{1, 1, 1},
+			intensity:  0.75,
+			numSamples: 1,
+		},
+		PointLight{
+			point:      Point{5, 1, 10},
+			color:      Color{1, 1, 1},
+			intensity:  1000,
+			radius:     0,
+			numSamples: 1,
+		},
 	}
 
 	return Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}

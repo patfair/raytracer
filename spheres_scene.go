@@ -60,7 +60,13 @@ func SpheresScene() Scene {
 	}
 
 	lights := []Light{
-		PointLight{Point{10, 0, 30}, Color{1, 1, 0.8}, 30000},
+		PointLight{
+			point:      Point{10, 0, 30},
+			color:      Color{1, 1, 0.8},
+			intensity:  30000,
+			radius:     2,
+			numSamples: 20,
+		},
 	}
 
 	return Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0, 0, 0}}

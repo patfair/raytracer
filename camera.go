@@ -64,7 +64,7 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 	}
 
 	// Set up progress bar for the console.
-	progress := pb.StartNew(width * height)
+	progress := pb.Full.Start(width * height)
 
 	// Set up parallel jobs to take advantage of multiple processor cores.
 	doneChannel := make(chan struct{})

@@ -1,12 +1,13 @@
 package main
 
 type DistantLight struct {
-	direction Vector
-	color     Color
-	intensity float64
+	direction  Vector
+	color      Color
+	intensity  float64
+	numSamples int
 }
 
-func (light DistantLight) Direction(point Point) Vector {
+func (light DistantLight) Direction(point Point, sampleNumber int) Vector {
 	return light.direction.ToUnit()
 }
 
@@ -16,6 +17,10 @@ func (light DistantLight) Color() Color {
 
 func (light DistantLight) Intensity(point Point) float64 {
 	return light.intensity
+}
+
+func (light DistantLight) NumSamples() int {
+	return light.numSamples
 }
 
 func (light DistantLight) IsBlockedByIntersection(point Point, intersection *Intersection) bool {

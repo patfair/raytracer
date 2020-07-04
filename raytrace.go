@@ -108,44 +108,46 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 
 		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
-				// Check if there is an object between the intersection point and the light source, in which case
-				// it should cast a shadow.
-				lightRay := Ray{
-					Point:     closestIntersection.Point,
-					Direction: light.Direction(closestIntersection.Point).Multiply(-1).ToUnit(),
-				}
-				transparency := 1.0
-				for _, surface := range scene.Surfaces {
-					if intersection := surface.Intersection(lightRay); intersection != nil {
-						// Require a minimum distance to avoid a surface from shadowing itself.
-						if intersection.Distance > shadowBias {
-							if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
-								transparency *= 1 - surface.ShadingProperties().Opacity
+				for i := 0; i < light.NumSamples(); i++ {
+					// Check if there is an object between the intersection point and the light source, in which case
+					// it should cast a shadow.
+					lightRay := Ray{
+						Point:     closestIntersection.Point,
+						Direction: light.Direction(closestIntersection.Point, i).Multiply(-1).ToUnit(),
+					}
+					transparency := 1.0
+					for _, surface := range scene.Surfaces {
+						if intersection := surface.Intersection(lightRay); intersection != nil {
+							// Require a minimum distance to avoid a surface from shadowing itself.
+							if intersection.Distance > shadowBias {
+								if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
+									transparency *= 1 - surface.ShadingProperties().Opacity
+								}
 							}
 						}
 					}
-				}
-				if transparency == 0 {
-					continue
-				}
+					if transparency == 0 {
+						continue
+					}
 
-				incidentDotProduct :=
-					light.Direction(closestIntersection.Point).Multiply(-1).Dot(closestIntersection.Normal)
-				incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
-					transparency
-				diffuseColor.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
-					incidentLight
-				diffuseColor.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
-					incidentLight
-				diffuseColor.B += closestSurface.AlbedoAt(closestIntersection.Point).B / math.Pi * light.Color().B *
-					incidentLight
+					incidentDotProduct :=
+						light.Direction(closestIntersection.Point, i).Multiply(-1).Dot(closestIntersection.Normal)
+					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
+						transparency / float64(light.NumSamples())
+					diffuseColor.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
+						incidentLight
+					diffuseColor.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
+						incidentLight
+					diffuseColor.B += closestSurface.AlbedoAt(closestIntersection.Point).B / math.Pi * light.Color().B *
+						incidentLight
 
-				// Calculate specular reflection.
-				specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
-					shadingProperties.SpecularExponent)
-				specularColor.R += light.Color().R * specularIntensity
-				specularColor.G += light.Color().G * specularIntensity
-				specularColor.B += light.Color().B * specularIntensity
+					// Calculate specular reflection.
+					specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
+						shadingProperties.SpecularExponent) / float64(light.NumSamples())
+					specularColor.R += light.Color().R * specularIntensity
+					specularColor.G += light.Color().G * specularIntensity
+					specularColor.B += light.Color().B * specularIntensity
+				}
 			}
 		}
 
