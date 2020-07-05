@@ -32,7 +32,7 @@ func (light PointLight) Direction(point Point, sampleNumber int) Vector {
 	vDirection := nominalDirection.Cross(uDirection).ToUnit()
 
 	// Randomize the point within the light's radius.
-	r := (0.25 + 0.75*rand.Float64()) * light.radius
+	r := light.radius * math.Sqrt(rand.Float64())
 	phi := (float64(sampleNumber) + rand.Float64()) * 2 * math.Pi / float64(light.NumSamples())
 	u := uDirection.Multiply(r * math.Cos(phi))
 	v := vDirection.Multiply(r * math.Sin(phi))

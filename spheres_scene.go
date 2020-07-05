@@ -72,15 +72,15 @@ func SpheresScene() (*Scene, *Camera, error) {
 			point:      Point{10, 0, 30},
 			color:      Color{1, 1, 0.8},
 			intensity:  30000,
-			radius:     0, //2,
-			numSamples: 1, //20,
+			radius:     2,
+			numSamples: 20,
 		},
 	}
 
 	cameraOrigin := Point{0, 0, 3}
 	focalDistance := cameraOrigin.VectorTo(blueSphere.Center).Norm()
-	camera, err := NewCamera(Ray{cameraOrigin, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 400, 225, 40, 0.1,
-		focalDistance, 20, 2)
+	camera, err := NewCamera(Ray{cameraOrigin, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 800, 450, 40, 0,
+		focalDistance, 1, 1)
 	//camera, err := NewCamera(Ray{Point{0, 0, 3}, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 3840, 2160, 40, 2)
 
 	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0, 0, 0}}, camera, err
