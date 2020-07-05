@@ -1,14 +1,28 @@
 package main
 
+import "math/rand"
+
 type DistantLight struct {
-	direction  Vector
-	color      Color
-	intensity  float64
-	numSamples int
+	direction          Vector
+	color              Color
+	intensity          float64
+	directionVariation float64
+	numSamples         int
 }
 
 func (light DistantLight) Direction(point Point, sampleNumber int) Vector {
-	return light.direction.ToUnit()
+	nominalDirection := light.direction.ToUnit()
+	if light.directionVariation == 0 {
+		return nominalDirection
+	}
+
+	// Adjust each component of the direction by a random factor.
+	direction := nominalDirection
+	direction.X += (rand.Float64() - 1) * light.directionVariation * nominalDirection.X
+	direction.Y += (rand.Float64() - 1) * light.directionVariation * nominalDirection.Y
+	direction.Z += (rand.Float64() - 1) * light.directionVariation * nominalDirection.Z
+
+	return direction.ToUnit()
 }
 
 func (light DistantLight) Color() Color {
