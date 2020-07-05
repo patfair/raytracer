@@ -13,7 +13,7 @@ const (
 
 type RaytraceRowsRequest struct {
 	Scene       *Scene
-	Rays        [][]Ray
+	Rays        [][][]Ray
 	Start       int
 	Count       int
 	Pixels      [][]Color
@@ -25,8 +25,18 @@ func (request *RaytraceRowsRequest) Run() {
 	for i := 0; i < request.Count; i++ {
 		y := request.Start + i
 		row := request.Rays[y]
-		for x, ray := range row {
-			request.Pixels[y][x] = castRay(request.Scene, ray, 0, 1)
+		for x, pixelRays := range row {
+			var averagePixel Color
+			for _, ray := range pixelRays {
+				pixel := castRay(request.Scene, ray, 0, 1)
+				averagePixel.R += pixel.R
+				averagePixel.G += pixel.G
+				averagePixel.B += pixel.B
+			}
+			averagePixel.R /= float64(len(pixelRays))
+			averagePixel.G /= float64(len(pixelRays))
+			averagePixel.B /= float64(len(pixelRays))
+			request.Pixels[y][x] = averagePixel
 			request.Progress.Increment()
 		}
 	}

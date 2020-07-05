@@ -5,6 +5,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"image"
 	"math"
+	"math/rand"
 	"strings"
 )
 
@@ -13,12 +14,12 @@ const (
 )
 
 type Camera struct {
-	Rays              [][]Ray
+	Rays              [][][]Ray
 	SupersampleFactor int
 }
 
-func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64,
-	supersampleFactor int) (*Camera, error) {
+func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64, apertureRadius float64,
+	focalDistance float64, depthOfFieldSamples int, supersampleFactor int) (*Camera, error) {
 	// Check for validity of dimensions.
 	if width <= 0 || height <= 0 {
 		return nil, errors.New("width and height must be positive numbers")
@@ -40,15 +41,28 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	uXyz := viewCenter.Direction.Cross(upDirection).ToUnit()
 	vXyz := viewCenter.Direction.ToUnit()
 	wXyz := upDirection.ToUnit()
+	rays := make([][][]Ray, height)
 
-	rays := make([][]Ray, height)
 	for i := 0; i < height; i++ {
-		rays[i] = make([]Ray, width)
+		rays[i] = make([][]Ray, width)
 		w := (float64(height-i-1) - halfHeight + 0.5) * pixelSize
 		for j := 0; j < width; j++ {
-			u := (float64(j) - halfWidth + 0.5) * pixelSize
-			rays[i][j].Point = viewCenter.Point
-			rays[i][j].Direction = uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz).ToUnit()
+			rays[i][j] = make([]Ray, depthOfFieldSamples)
+			for n := 0; n < depthOfFieldSamples; n++ {
+				u := (float64(j) - halfWidth + 0.5) * pixelSize
+				nominalRayDirection := uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz).ToUnit()
+				focalPlanePoint := viewCenter.Point.Translate(nominalRayDirection.Multiply(focalDistance))
+
+				// Adjust the center ray to simulate a non-zero aperture, to produce a depth-of-field effect.
+				r := apertureRadius * math.Sqrt(rand.Float64())
+				phi := (float64(n) + rand.Float64()) * 2 * math.Pi / float64(depthOfFieldSamples)
+				deltaU := r * math.Cos(phi)
+				deltaW := r * math.Sin(phi)
+				modifiedOrigin := viewCenter.Point.Translate(uXyz.Multiply(deltaU)).Translate(wXyz.Multiply(deltaW))
+
+				rays[i][j][n].Point = modifiedOrigin
+				rays[i][j][n].Direction = modifiedOrigin.VectorTo(focalPlanePoint).ToUnit()
+			}
 		}
 	}
 
@@ -119,8 +133,10 @@ func (camera Camera) String() string {
 	var rowStrings []string
 	for _, row := range camera.Rays {
 		var rayStrings []string
-		for _, ray := range row {
-			rayStrings = append(rayStrings, ray.String())
+		for _, pixelRays := range row {
+			for _, ray := range pixelRays {
+				rayStrings = append(rayStrings, ray.String())
+			}
 		}
 		rowStrings = append(rowStrings, strings.Join(rayStrings, "\t"))
 	}

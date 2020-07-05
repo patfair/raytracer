@@ -2,7 +2,7 @@ package main
 
 import "math"
 
-func AllElementsScene() Scene {
+func AllElementsScene() (*Scene, *Camera, error) {
 	surfaces := []Surface{
 		// YZ plane
 		Plane{
@@ -160,5 +160,8 @@ func AllElementsScene() Scene {
 		},
 	}
 
-	return Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}
+	camera, err := NewCamera(Ray{Point{10, 10, 5}, Vector{-10, -10, -5}}, Vector{-10, -10, 40}, 3840, 2160, 30, 0, 0, 1,
+		2)
+
+	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0.1, 0.8, 1}}, camera, err
 }

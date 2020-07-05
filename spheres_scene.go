@@ -1,6 +1,14 @@
 package main
 
-func SpheresScene() Scene {
+func SpheresScene() (*Scene, *Camera, error) {
+	tealSphere := newSphere(Point{0, 20, 1}, Color{0.1, 0.7, 1})
+	greenSphere := newSphere(Point{-2, 15, 1}, Color{0, 0.4, 0})
+	redSphere := newSphere(Point{2.5, 21, 1}, Color{0.8, 0, 0})
+	blueSphere := newSphere(Point{1, 9, 1}, Color{0, 0.3, 0.8})
+	yellowSphere := newSphere(Point{-3, 10, 1}, Color{0.9, 0.7, 0})
+	purpleSphere := newSphere(Point{4, 10.5, 1}, Color{0.75, 0.2, 0.8})
+	graySphere := newSphere(Point{3.5, 16, 1}, Color{0.8, 0.8, 0.8})
+
 	surfaces := []Surface{
 		// XY plane
 		Plane{
@@ -14,13 +22,13 @@ func SpheresScene() Scene {
 			},
 		},
 
-		newSphere(Point{0, 20, 1}, Color{0.1, 0.7, 1}),      // Teal sphere
-		newSphere(Point{-2, 15, 1}, Color{0, 0.4, 0}),       // Dark green sphere
-		newSphere(Point{2.5, 21, 1}, Color{0.8, 0, 0}),      // Red sphere
-		newSphere(Point{1, 9, 1}, Color{0, 0.3, 0.8}),       // Blue sphere
-		newSphere(Point{-3, 10, 1}, Color{0.9, 0.7, 0}),     // Yellow sphere
-		newSphere(Point{4, 10.5, 1}, Color{0.75, 0.2, 0.8}), // Purple sphere
-		newSphere(Point{3.5, 16, 1}, Color{0.8, 0.8, 0.8}),  // Gray sphere
+		tealSphere,
+		greenSphere,
+		redSphere,
+		blueSphere,
+		yellowSphere,
+		purpleSphere,
+		graySphere,
 	}
 
 	// Glass panel
@@ -64,12 +72,18 @@ func SpheresScene() Scene {
 			point:      Point{10, 0, 30},
 			color:      Color{1, 1, 0.8},
 			intensity:  30000,
-			radius:     2,
-			numSamples: 20,
+			radius:     0, //2,
+			numSamples: 1, //20,
 		},
 	}
 
-	return Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0, 0, 0}}
+	cameraOrigin := Point{0, 0, 3}
+	focalDistance := cameraOrigin.VectorTo(blueSphere.Center).Norm()
+	camera, err := NewCamera(Ray{cameraOrigin, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 400, 225, 40, 0.1,
+		focalDistance, 20, 2)
+	//camera, err := NewCamera(Ray{Point{0, 0, 3}, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 3840, 2160, 40, 2)
+
+	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0, 0, 0}}, camera, err
 }
 
 func newSphere(point Point, color Color) Sphere {
