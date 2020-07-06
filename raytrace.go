@@ -11,35 +11,31 @@ const (
 	shadowBias         = 0.001
 )
 
-type RaytraceRowsRequest struct {
+type RaytraceRowRequest struct {
 	Scene       *Scene
-	Rays        [][][]Ray
-	Start       int
-	Count       int
+	Row         [][]Ray
+	RowIndex    int
 	Pixels      [][]Color
 	Progress    *pb.ProgressBar
 	DoneChannel chan struct{}
 }
 
-func (request *RaytraceRowsRequest) Run() {
-	for i := 0; i < request.Count; i++ {
-		y := request.Start + i
-		row := request.Rays[y]
-		for x, pixelRays := range row {
-			var averagePixel Color
-			for _, ray := range pixelRays {
-				pixel := castRay(request.Scene, ray, 0, 1)
-				averagePixel.R += pixel.R
-				averagePixel.G += pixel.G
-				averagePixel.B += pixel.B
-			}
-			averagePixel.R /= float64(len(pixelRays))
-			averagePixel.G /= float64(len(pixelRays))
-			averagePixel.B /= float64(len(pixelRays))
-			request.Pixels[y][x] = averagePixel
-			request.Progress.Increment()
+func (request *RaytraceRowRequest) Run() {
+	for x, pixelRays := range request.Row {
+		var averagePixel Color
+		for _, ray := range pixelRays {
+			pixel := castRay(request.Scene, ray, 0, 1)
+			averagePixel.R += pixel.R
+			averagePixel.G += pixel.G
+			averagePixel.B += pixel.B
 		}
+		averagePixel.R /= float64(len(pixelRays))
+		averagePixel.G /= float64(len(pixelRays))
+		averagePixel.B /= float64(len(pixelRays))
+		request.Pixels[request.RowIndex][x] = averagePixel
+		request.Progress.Increment()
 	}
+
 	request.DoneChannel <- struct{}{}
 }
 

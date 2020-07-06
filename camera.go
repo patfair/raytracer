@@ -6,11 +6,8 @@ import (
 	"image"
 	"math"
 	"math/rand"
+	"runtime"
 	"strings"
-)
-
-const (
-	parallelism = 5
 )
 
 type Camera struct {
@@ -81,25 +78,38 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 	progress := pb.Full.Start(width * height)
 
 	// Set up parallel jobs to take advantage of multiple processor cores.
-	doneChannel := make(chan struct{})
-	rowsPerJob := (height + parallelism - 1) / parallelism // Round up
-	start := 0
-	for i := 0; i < parallelism; i++ {
-		count := int(math.Min(float64(rowsPerJob), float64(height-start)))
-		request := RaytraceRowsRequest{
+	numJobs := len(camera.Rays)
+	jobsChannel := make(chan RaytraceRowRequest, numJobs)
+	doneChannel := make(chan struct{}, numJobs)
+	requests := make([]RaytraceRowRequest, numJobs)
+	shufflePositions := rand.Perm(numJobs)
+
+	// Create the workers.
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			for request := range jobsChannel {
+				request.Run()
+			}
+		}()
+	}
+
+	for i, rowRays := range camera.Rays {
+		// Shuffle the requests to make progress more linear and predicted end time more accurate.
+		requests[shufflePositions[i]] = RaytraceRowRequest{
 			Scene:       scene,
-			Rays:        camera.Rays,
-			Start:       start,
-			Count:       count,
+			Row:         rowRays,
+			RowIndex:    i,
 			Pixels:      pixels,
 			Progress:    progress,
 			DoneChannel: doneChannel,
 		}
-		go request.Run()
-		start += count
 	}
 
-	for i := 0; i < parallelism; i++ {
+	for _, request := range requests {
+		jobsChannel <- request
+	}
+
+	for i := 0; i < numJobs; i++ {
 		<-doneChannel
 	}
 
