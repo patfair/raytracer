@@ -10,9 +10,9 @@ type DistantLight struct {
 	numSamples         int
 }
 
-func (light DistantLight) Direction(point Point, sampleNumber int) Vector {
+func (light DistantLight) Direction(point Point, sampleNumber, numSamples int) Vector {
 	nominalDirection := light.direction.ToUnit()
-	if light.directionVariation == 0 {
+	if light.directionVariation == 0 || numSamples <= 1 {
 		return nominalDirection
 	}
 

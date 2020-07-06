@@ -9,12 +9,16 @@ const (
 	maxReflectionDepth = 20
 	reflectionBias     = 0.001
 	shadowBias         = 0.001
+	colorThreshold     = 0.01
+	adjacentPixels     = 1
 )
 
 type RaytraceRowRequest struct {
 	Scene       *Scene
 	Camera      *Camera
 	RowIndex    int
+	IsDraft     bool
+	DraftPixels [][]Color
 	Pixels      [][]Color
 	Progress    *pb.ProgressBar
 	DoneChannel chan struct{}
@@ -23,15 +27,19 @@ type RaytraceRowRequest struct {
 func (request *RaytraceRowRequest) Run() {
 	camera := request.Camera
 	for j := 0; j < camera.Width; j++ {
-		// TODO(pat): Change this factor on a per-pixel basis to save time.
 		supersampleFactor := camera.SupersampleFactor
+		supersamplingRequired := !request.IsDraft && isSupersamplingRequired(request.DraftPixels, j, request.RowIndex,
+			adjacentPixels)
+		if !supersamplingRequired {
+			supersampleFactor = 1
+		}
 
 		var averagePixel Color
 		for n := 0; n < camera.DepthOfFieldSamples; n++ {
 			for a := 0; a < supersampleFactor; a++ {
 				for b := 0; b < supersampleFactor; b++ {
 					ray := camera.GetRay(j, request.RowIndex, n, supersampleFactor, a, b)
-					pixel := castRay(request.Scene, ray, 0, 1)
+					pixel := request.castRay(request.Scene, ray, 0, 1, supersamplingRequired)
 					averagePixel.R += pixel.R
 					averagePixel.G += pixel.G
 					averagePixel.B += pixel.B
@@ -49,7 +57,8 @@ func (request *RaytraceRowRequest) Run() {
 	request.DoneChannel <- struct{}{}
 }
 
-func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
+func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, refractionIndex float64,
+	supersamplingRequired bool) Color {
 	pixelColor := scene.BackgroundColor
 
 	// Limit recursion caused by reflecting rays off multiple surfaces.
@@ -109,7 +118,8 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 				closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(-reflectionBias))
 
 			refractedRay := Ray{refractionPoint, refractionDirection.ToUnit()}
-			refractedColor = castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex)
+			refractedColor = request.castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex,
+				supersamplingRequired)
 		}
 
 		reflectedDirection := ray.Direction.Add(
@@ -119,17 +129,21 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 			reflectedPoint := closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(reflectionBias))
 
 			reflectedRay := Ray{reflectedPoint, reflectedDirection.ToUnit()}
-			reflectedColor = castRay(scene, reflectedRay, depth+1, refractionIndex)
+			reflectedColor = request.castRay(scene, reflectedRay, depth+1, refractionIndex, supersamplingRequired)
 		}
 
 		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
-				for i := 0; i < light.NumSamples(); i++ {
+				numSamples := light.NumSamples()
+				if !supersamplingRequired {
+					numSamples = int(math.Min(float64(numSamples), 4))
+				}
+				for i := 0; i < numSamples; i++ {
 					// Check if there is an object between the intersection point and the light source, in which case
 					// it should cast a shadow.
 					lightRay := Ray{
 						Point:     closestIntersection.Point,
-						Direction: light.Direction(closestIntersection.Point, i).Multiply(-1).ToUnit(),
+						Direction: light.Direction(closestIntersection.Point, i, numSamples).Multiply(-1).ToUnit(),
 					}
 					transparency := 1.0
 					for _, surface := range scene.Surfaces {
@@ -146,10 +160,10 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 						continue
 					}
 
-					incidentDotProduct :=
-						light.Direction(closestIntersection.Point, i).Multiply(-1).Dot(closestIntersection.Normal)
+					incidentDotProduct := light.Direction(closestIntersection.Point, i,
+						numSamples).Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
-						transparency / float64(light.NumSamples())
+						transparency / float64(numSamples)
 					diffuseColor.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
 						incidentLight
 					diffuseColor.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
@@ -159,7 +173,7 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 
 					// Calculate specular reflection.
 					specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
-						shadingProperties.SpecularExponent) / float64(light.NumSamples())
+						shadingProperties.SpecularExponent) / float64(numSamples)
 					specularColor.R += light.Color().R * specularIntensity
 					specularColor.G += light.Color().G * specularIntensity
 					specularColor.B += light.Color().B * specularIntensity
@@ -176,4 +190,31 @@ func castRay(scene *Scene, ray Ray, depth int, refractionIndex float64) Color {
 	}
 
 	return pixelColor
+}
+
+func isSupersamplingRequired(draftPixels [][]Color, x, y, numAdjacent int) bool {
+	for i := y - numAdjacent; i <= y+numAdjacent; i++ {
+		for j := x - numAdjacent; j <= x+numAdjacent; j++ {
+			if !arePixelsSimilar(draftPixels, x, y, j, i) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func arePixelsSimilar(draftPixels [][]Color, xA, yA, xB, yB int) bool {
+	height := len(draftPixels)
+	if height == 0 {
+		return true
+	}
+	width := len(draftPixels[0])
+	if xA < 0 || xA >= width || xB < 0 || xB >= width || yA < 0 || yA >= height || yB < 0 || yB >= height {
+		return true
+	}
+
+	pixelA := draftPixels[yA][xA]
+	pixelB := draftPixels[yB][xB]
+	return math.Abs(pixelA.R-pixelB.R) <= colorThreshold && math.Abs(pixelA.G-pixelB.G) <= colorThreshold &&
+		math.Abs(pixelA.B-pixelB.B) <= colorThreshold
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"image"
 	"math"
@@ -21,6 +22,7 @@ type Camera struct {
 	FocalDistance       float64
 	DepthOfFieldSamples int
 	SupersampleFactor   int
+	isDraft             bool
 }
 
 func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64, apertureRadius float64,
@@ -53,6 +55,7 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 		FocalDistance:       focalDistance,
 		DepthOfFieldSamples: depthOfFieldSamples,
 		SupersampleFactor:   supersampleFactor,
+		isDraft:             false,
 	}, nil
 }
 
@@ -78,13 +81,33 @@ func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex, supersampleFactor, s
 }
 
 func (camera *Camera) Render(scene *Scene) *image.RGBA {
+	fmt.Println("Producing draft image for mapping optimizations...")
+	draftCamera := *camera
+	draftCamera.ApertureRadius = 0
+	draftCamera.DepthOfFieldSamples = 1
+	draftCamera.SupersampleFactor = 1
+	draftPixels := draftCamera.renderPixels(scene, true, [][]Color{})
+
+	fmt.Println("\nProducing final image...")
+	pixels := camera.renderPixels(scene, false, draftPixels)
+	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{camera.Width, camera.Height}})
+	for x := 0; x < camera.Width; x++ {
+		for y := 0; y < camera.Height; y++ {
+			img.Set(x, y, pixels[y][x].ToRgba())
+		}
+	}
+
+	return img
+}
+
+func (camera *Camera) renderPixels(scene *Scene, isDraft bool, draftPixels [][]Color) [][]Color {
+	// Set up progress bar for the console.
+	progress := pb.Full.Start(camera.Width * camera.Height)
+
 	pixels := make([][]Color, camera.Height)
 	for i := 0; i < camera.Height; i++ {
 		pixels[i] = make([]Color, camera.Width)
 	}
-
-	// Set up progress bar for the console.
-	progress := pb.Full.Start(camera.Width * camera.Height)
 
 	// Set up parallel jobs to take advantage of multiple processor cores.
 	numJobs := camera.Height
@@ -109,6 +132,8 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 			Scene:       scene,
 			Camera:      camera,
 			RowIndex:    i,
+			IsDraft:     isDraft,
+			DraftPixels: draftPixels,
 			Pixels:      pixels,
 			Progress:    progress,
 			DoneChannel: doneChannel,
@@ -124,13 +149,6 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 		<-doneChannel
 	}
 
-	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{camera.Width, camera.Height}})
-	for x := 0; x < camera.Width; x++ {
-		for y := 0; y < camera.Height; y++ {
-			img.Set(x, y, pixels[y][x].ToRgba())
-		}
-	}
-
 	progress.Finish()
-	return img
+	return pixels
 }

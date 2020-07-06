@@ -13,9 +13,12 @@ type PointLight struct {
 	numSamples int
 }
 
-func (light PointLight) Direction(point Point, sampleNumber int) Vector {
+func (light PointLight) Direction(point Point, sampleNumber, numSamples int) Vector {
 	nominalDirection := light.point.VectorTo(point).ToUnit()
-	sampleNumber %= light.NumSamples()
+	if numSamples <= 1 {
+		return nominalDirection
+	}
+	sampleNumber %= numSamples
 
 	// Pick a arbitrary vectors normal to the nominal direction and to each other to represent the plane of the light.
 	var uDirection Vector
