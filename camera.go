@@ -35,10 +35,6 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 		return nil, errors.New("camera view and up direction vectors must be perpendicular")
 	}
 
-	// Scale the dimensions for anti-aliasing supersampling.
-	width *= supersampleFactor
-	height *= supersampleFactor
-
 	pixelSize := 2 * math.Tan(horizontalFovDeg*math.Pi/180/2) / float64(width)
 
 	uXyz := viewCenter.Direction.Cross(upDirection).ToUnit()
@@ -60,9 +56,12 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	}, nil
 }
 
-func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex int) Ray {
-	w := (float64(camera.Height)/2 - float64(y+1) + 0.5) * camera.PixelSize
-	u := (float64(x) - float64(camera.Width)/2 + 0.5) * camera.PixelSize
+func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex, supersampleFactor, supersampleIndexX,
+	supersampleIndexY int) Ray {
+	w := (float64(camera.Height*supersampleFactor)/2 - float64(y*supersampleFactor+supersampleIndexY+1) + 0.5) *
+		camera.PixelSize / float64(supersampleFactor)
+	u := (float64(x*supersampleFactor+supersampleIndexX) - float64(camera.Width*supersampleFactor)/2 + 0.5) *
+		camera.PixelSize / float64(supersampleFactor)
 	nominalRayDirection :=
 		camera.UVector.Multiply(u).Add(camera.WVector.Multiply(w)).Add(camera.VVector).ToUnit()
 	focalPlanePoint := camera.Point.Translate(nominalRayDirection.Multiply(camera.FocalDistance))
@@ -125,25 +124,10 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 		<-doneChannel
 	}
 
-	finalWidth := camera.Width / camera.SupersampleFactor
-	finalHeight := camera.Height / camera.SupersampleFactor
-	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{finalWidth, finalHeight}})
-	for x := 0; x < finalWidth; x++ {
-		for y := 0; y < finalHeight; y++ {
-			var averagePixel Color
-			for i := 0; i < camera.SupersampleFactor; i++ {
-				for j := 0; j < camera.SupersampleFactor; j++ {
-					pixel := pixels[y*camera.SupersampleFactor+j][x*camera.SupersampleFactor+i]
-					averagePixel.R += pixel.R
-					averagePixel.G += pixel.G
-					averagePixel.B += pixel.B
-				}
-			}
-			numSamples := float64(camera.SupersampleFactor * camera.SupersampleFactor)
-			averagePixel.R /= numSamples
-			averagePixel.G /= numSamples
-			averagePixel.B /= numSamples
-			img.Set(x, y, averagePixel.ToRgba())
+	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{camera.Width, camera.Height}})
+	for x := 0; x < camera.Width; x++ {
+		for y := 0; y < camera.Height; y++ {
+			img.Set(x, y, pixels[y][x].ToRgba())
 		}
 	}
 

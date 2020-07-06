@@ -10,10 +10,10 @@ func TestNewCameraXY(t *testing.T) {
 	upDirection := Vector{0, 1, 0}
 	camera, err := NewCamera(viewDirection, upDirection, 2, 2, 90, 0, 1, 1, 1)
 	assert.Nil(t, err)
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{-0.5, 0.5, -1}.ToUnit()}, camera.GetRay(0, 0, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{0.5, 0.5, -1}.ToUnit()}, camera.GetRay(1, 0, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{-0.5, -0.5, -1}.ToUnit()}, camera.GetRay(0, 1, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{0.5, -0.5, -1}.ToUnit()}, camera.GetRay(1, 1, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{-0.5, 0.5, -1}.ToUnit()}, camera.GetRay(0, 0, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{0.5, 0.5, -1}.ToUnit()}, camera.GetRay(1, 0, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{-0.5, -0.5, -1}.ToUnit()}, camera.GetRay(0, 1, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{0.5, -0.5, -1}.ToUnit()}, camera.GetRay(1, 1, 0, 1, 0, 0))
 }
 
 func TestNewCameraRotated(t *testing.T) {
@@ -21,10 +21,10 @@ func TestNewCameraRotated(t *testing.T) {
 	upDirection := Vector{0, -1, 0}
 	camera, err := NewCamera(viewDirection, upDirection, 2, 2, 90, 0, 1, 1, 1)
 	assert.Nil(t, err)
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, -0.5, 0.5}.ToUnit()}, camera.GetRay(0, 0, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, -0.5, -0.5}.ToUnit()}, camera.GetRay(1, 0, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, 0.5, 0.5}.ToUnit()}, camera.GetRay(0, 1, 0))
-	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, 0.5, -0.5}.ToUnit()}, camera.GetRay(1, 1, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, -0.5, 0.5}.ToUnit()}, camera.GetRay(0, 0, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, -0.5, -0.5}.ToUnit()}, camera.GetRay(1, 0, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, 0.5, 0.5}.ToUnit()}, camera.GetRay(0, 1, 0, 1, 0, 0))
+	assertRayEqual(t, Ray{viewDirection.Point, Vector{1, 0.5, -0.5}.ToUnit()}, camera.GetRay(1, 1, 0, 1, 0, 0))
 }
 
 func TestNewCameraVectorsNotPerpendicular(t *testing.T) {

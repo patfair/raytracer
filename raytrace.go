@@ -23,18 +23,25 @@ type RaytraceRowRequest struct {
 func (request *RaytraceRowRequest) Run() {
 	camera := request.Camera
 	for j := 0; j < camera.Width; j++ {
+		// TODO(pat): Change this factor on a per-pixel basis to save time.
+		supersampleFactor := camera.SupersampleFactor
+
 		var averagePixel Color
 		for n := 0; n < camera.DepthOfFieldSamples; n++ {
-			ray := camera.GetRay(j, request.RowIndex, n)
-			pixel := castRay(request.Scene, ray, 0, 1)
-			averagePixel.R += pixel.R
-			averagePixel.G += pixel.G
-			averagePixel.B += pixel.B
+			for a := 0; a < supersampleFactor; a++ {
+				for b := 0; b < supersampleFactor; b++ {
+					ray := camera.GetRay(j, request.RowIndex, n, supersampleFactor, a, b)
+					pixel := castRay(request.Scene, ray, 0, 1)
+					averagePixel.R += pixel.R
+					averagePixel.G += pixel.G
+					averagePixel.B += pixel.B
+				}
+			}
 		}
 
-		averagePixel.R /= float64(camera.DepthOfFieldSamples)
-		averagePixel.G /= float64(camera.DepthOfFieldSamples)
-		averagePixel.B /= float64(camera.DepthOfFieldSamples)
+		averagePixel.R /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
+		averagePixel.G /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
+		averagePixel.B /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
 		request.Pixels[request.RowIndex][j] = averagePixel
 		request.Progress.Increment()
 	}
