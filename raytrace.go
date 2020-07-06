@@ -13,7 +13,7 @@ const (
 
 type RaytraceRowRequest struct {
 	Scene       *Scene
-	Row         [][]Ray
+	Camera      *Camera
 	RowIndex    int
 	Pixels      [][]Color
 	Progress    *pb.ProgressBar
@@ -21,18 +21,21 @@ type RaytraceRowRequest struct {
 }
 
 func (request *RaytraceRowRequest) Run() {
-	for x, pixelRays := range request.Row {
+	camera := request.Camera
+	for j := 0; j < camera.Width; j++ {
 		var averagePixel Color
-		for _, ray := range pixelRays {
+		for n := 0; n < camera.DepthOfFieldSamples; n++ {
+			ray := camera.GetRay(j, request.RowIndex, n)
 			pixel := castRay(request.Scene, ray, 0, 1)
 			averagePixel.R += pixel.R
 			averagePixel.G += pixel.G
 			averagePixel.B += pixel.B
 		}
-		averagePixel.R /= float64(len(pixelRays))
-		averagePixel.G /= float64(len(pixelRays))
-		averagePixel.B /= float64(len(pixelRays))
-		request.Pixels[request.RowIndex][x] = averagePixel
+
+		averagePixel.R /= float64(camera.DepthOfFieldSamples)
+		averagePixel.G /= float64(camera.DepthOfFieldSamples)
+		averagePixel.B /= float64(camera.DepthOfFieldSamples)
+		request.Pixels[request.RowIndex][j] = averagePixel
 		request.Progress.Increment()
 	}
 

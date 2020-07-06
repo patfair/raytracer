@@ -7,12 +7,20 @@ import (
 	"math"
 	"math/rand"
 	"runtime"
-	"strings"
 )
 
 type Camera struct {
-	Rays              [][][]Ray
-	SupersampleFactor int
+	Point               Point
+	Width               int
+	Height              int
+	PixelSize           float64
+	UVector             Vector
+	VVector             Vector
+	WVector             Vector
+	ApertureRadius      float64
+	FocalDistance       float64
+	DepthOfFieldSamples int
+	SupersampleFactor   int
 }
 
 func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64, apertureRadius float64,
@@ -31,61 +39,64 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	width *= supersampleFactor
 	height *= supersampleFactor
 
-	halfWidth := float64(width) / 2
-	halfHeight := float64(height) / 2
-	pixelSize := math.Tan(horizontalFovDeg*math.Pi/180/2) / halfWidth
+	pixelSize := 2 * math.Tan(horizontalFovDeg*math.Pi/180/2) / float64(width)
 
 	uXyz := viewCenter.Direction.Cross(upDirection).ToUnit()
 	vXyz := viewCenter.Direction.ToUnit()
 	wXyz := upDirection.ToUnit()
-	rays := make([][][]Ray, height)
 
-	for i := 0; i < height; i++ {
-		rays[i] = make([][]Ray, width)
-		w := (float64(height-i-1) - halfHeight + 0.5) * pixelSize
-		for j := 0; j < width; j++ {
-			rays[i][j] = make([]Ray, depthOfFieldSamples)
-			for n := 0; n < depthOfFieldSamples; n++ {
-				u := (float64(j) - halfWidth + 0.5) * pixelSize
-				nominalRayDirection := uXyz.Multiply(u).Add(wXyz.Multiply(w)).Add(vXyz).ToUnit()
-				focalPlanePoint := viewCenter.Point.Translate(nominalRayDirection.Multiply(focalDistance))
+	return &Camera{
+		Point:               viewCenter.Point,
+		Width:               width,
+		Height:              height,
+		PixelSize:           pixelSize,
+		UVector:             uXyz,
+		VVector:             vXyz,
+		WVector:             wXyz,
+		ApertureRadius:      apertureRadius,
+		FocalDistance:       focalDistance,
+		DepthOfFieldSamples: depthOfFieldSamples,
+		SupersampleFactor:   supersampleFactor,
+	}, nil
+}
 
-				// Adjust the center ray to simulate a non-zero aperture, to produce a depth-of-field effect.
-				r := apertureRadius * math.Sqrt(rand.Float64())
-				phi := (float64(n) + rand.Float64()) * 2 * math.Pi / float64(depthOfFieldSamples)
-				deltaU := r * math.Cos(phi)
-				deltaW := r * math.Sin(phi)
-				modifiedOrigin := viewCenter.Point.Translate(uXyz.Multiply(deltaU)).Translate(wXyz.Multiply(deltaW))
+func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex int) Ray {
+	w := (float64(camera.Height)/2 - float64(y+1) + 0.5) * camera.PixelSize
+	u := (float64(x) - float64(camera.Width)/2 + 0.5) * camera.PixelSize
+	nominalRayDirection :=
+		camera.UVector.Multiply(u).Add(camera.WVector.Multiply(w)).Add(camera.VVector).ToUnit()
+	focalPlanePoint := camera.Point.Translate(nominalRayDirection.Multiply(camera.FocalDistance))
 
-				rays[i][j][n].Point = modifiedOrigin
-				rays[i][j][n].Direction = modifiedOrigin.VectorTo(focalPlanePoint).ToUnit()
-			}
-		}
-	}
+	// Adjust the center ray to simulate a non-zero aperture, to produce a depth-of-field effect.
+	r := camera.ApertureRadius * math.Sqrt(rand.Float64())
+	phi := (float64(depthOfFieldSampleIndex) + rand.Float64()) * 2 * math.Pi / float64(camera.DepthOfFieldSamples)
+	deltaU := r * math.Cos(phi)
+	deltaW := r * math.Sin(phi)
+	modifiedOrigin :=
+		camera.Point.Translate(camera.UVector.Multiply(deltaU)).Translate(camera.WVector.Multiply(deltaW))
 
-	return &Camera{Rays: rays, SupersampleFactor: supersampleFactor}, nil
+	return Ray{Point: modifiedOrigin, Direction: modifiedOrigin.VectorTo(focalPlanePoint).ToUnit()}
 }
 
 func (camera *Camera) Render(scene *Scene) *image.RGBA {
-	width := len(camera.Rays[0])
-	height := len(camera.Rays)
-	pixels := make([][]Color, height)
-	for y, _ := range camera.Rays {
-		pixels[y] = make([]Color, width)
+	pixels := make([][]Color, camera.Height)
+	for i := 0; i < camera.Height; i++ {
+		pixels[i] = make([]Color, camera.Width)
 	}
 
 	// Set up progress bar for the console.
-	progress := pb.Full.Start(width * height)
+	progress := pb.Full.Start(camera.Width * camera.Height)
 
 	// Set up parallel jobs to take advantage of multiple processor cores.
-	numJobs := len(camera.Rays)
+	numJobs := camera.Height
 	jobsChannel := make(chan RaytraceRowRequest, numJobs)
 	doneChannel := make(chan struct{}, numJobs)
 	requests := make([]RaytraceRowRequest, numJobs)
 	shufflePositions := rand.Perm(numJobs)
 
 	// Create the workers.
-	for i := 0; i < runtime.NumCPU(); i++ {
+	numThreads := runtime.NumCPU()
+	for i := 0; i < numThreads; i++ {
 		go func() {
 			for request := range jobsChannel {
 				request.Run()
@@ -93,11 +104,11 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 		}()
 	}
 
-	for i, rowRays := range camera.Rays {
+	for i := 0; i < camera.Height; i++ {
 		// Shuffle the requests to make progress more linear and predicted end time more accurate.
 		requests[shufflePositions[i]] = RaytraceRowRequest{
 			Scene:       scene,
-			Row:         rowRays,
+			Camera:      camera,
 			RowIndex:    i,
 			Pixels:      pixels,
 			Progress:    progress,
@@ -108,13 +119,14 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 	for _, request := range requests {
 		jobsChannel <- request
 	}
+	close(jobsChannel)
 
 	for i := 0; i < numJobs; i++ {
 		<-doneChannel
 	}
 
-	finalWidth := width / camera.SupersampleFactor
-	finalHeight := height / camera.SupersampleFactor
+	finalWidth := camera.Width / camera.SupersampleFactor
+	finalHeight := camera.Height / camera.SupersampleFactor
 	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{finalWidth, finalHeight}})
 	for x := 0; x < finalWidth; x++ {
 		for y := 0; y < finalHeight; y++ {
@@ -137,18 +149,4 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 
 	progress.Finish()
 	return img
-}
-
-func (camera Camera) String() string {
-	var rowStrings []string
-	for _, row := range camera.Rays {
-		var rayStrings []string
-		for _, pixelRays := range row {
-			for _, ray := range pixelRays {
-				rayStrings = append(rayStrings, ray.String())
-			}
-		}
-		rowStrings = append(rowStrings, strings.Join(rayStrings, "\t"))
-	}
-	return strings.Join(rowStrings, "\n")
 }
