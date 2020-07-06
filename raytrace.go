@@ -10,7 +10,7 @@ const (
 	reflectionBias     = 0.001
 	shadowBias         = 0.001
 	colorThreshold     = 0.01
-	adjacentPixels     = 1
+	adjacentPixels     = 4
 )
 
 type RaytraceRowRequest struct {
