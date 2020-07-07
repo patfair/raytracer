@@ -135,8 +135,8 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, ref
 		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
 				numSamples := light.NumSamples()
-				if !supersamplingRequired {
-					numSamples = int(math.Min(float64(numSamples), 4))
+				if !supersamplingRequired && !request.IsDraft {
+					numSamples = 1
 				}
 				for i := 0; i < numSamples; i++ {
 					// Check if there is an object between the intersection point and the light source, in which case
