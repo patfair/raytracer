@@ -1,36 +1,38 @@
 package main
 
+import "github.com/patfair/raytracer/geometry"
+
 type Plane struct {
-	Corner            Point
-	Width             Vector
-	Height            Vector
+	Corner            geometry.Point
+	Width             geometry.Vector
+	Height            geometry.Vector
 	shadingProperties ShadingProperties
 }
 
-func (plane Plane) Normal() Vector {
+func (plane Plane) Normal() geometry.Vector {
 	return plane.Width.Cross(plane.Height).ToUnit()
 }
 
-func (plane Plane) Intersection(ray Ray) *Intersection {
+func (plane Plane) Intersection(ray geometry.Ray) *geometry.Intersection {
 	denominator := plane.Normal().Dot(ray.Direction.ToUnit())
 	if denominator == 0 {
 		// The ray is parallel to the plane; they do not intersect.
 		return nil
 	}
 
-	distance := ray.Point.VectorTo(plane.Corner).Dot(plane.Normal()) / denominator
+	distance := ray.Origin.VectorTo(plane.Corner).Dot(plane.Normal()) / denominator
 	if distance < 0 {
 		// The plane is behind the ray.
 		return nil
 	}
-	point := ray.Point.Translate(ray.Direction.ToUnit().Multiply(distance))
+	point := ray.Origin.Translate(ray.Direction.ToUnit().Multiply(distance))
 
 	if !plane.isPointWithinLimits(point) {
 		// The ray intersects outside the width and height of the plane.
 		return nil
 	}
 
-	intersection := new(Intersection)
+	intersection := new(geometry.Intersection)
 	intersection.Distance = distance
 	intersection.Point = point
 	intersection.Normal = plane.Normal()
@@ -41,7 +43,7 @@ func (plane Plane) Intersection(ray Ray) *Intersection {
 	return intersection
 }
 
-func (plane Plane) AlbedoAt(point Point) Color {
+func (plane Plane) AlbedoAt(point geometry.Point) Color {
 	u, v := plane.toTextureCoordinates(point)
 	return plane.shadingProperties.DiffuseTexture.AlbedoAt(u, v)
 }
@@ -50,14 +52,14 @@ func (plane Plane) ShadingProperties() ShadingProperties {
 	return plane.shadingProperties
 }
 
-func (plane Plane) toTextureCoordinates(point Point) (float64, float64) {
+func (plane Plane) toTextureCoordinates(point geometry.Point) (float64, float64) {
 	vector := plane.Corner.VectorTo(point)
 	u := vector.Dot(plane.Width.ToUnit())
 	v := vector.Dot(plane.Height.ToUnit())
 	return u, v
 }
 
-func (plane Plane) isPointWithinLimits(point Point) bool {
+func (plane Plane) isPointWithinLimits(point geometry.Point) bool {
 	u, v := plane.toTextureCoordinates(point)
 	width := plane.Width.Norm()
 	height := plane.Height.Norm()

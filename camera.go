@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
+	"github.com/patfair/raytracer/geometry"
 	"image"
 	"math"
 	"math/rand"
@@ -11,13 +12,13 @@ import (
 )
 
 type Camera struct {
-	Point               Point
+	Point               geometry.Point
 	Width               int
 	Height              int
 	PixelSize           float64
-	UVector             Vector
-	VVector             Vector
-	WVector             Vector
+	UVector             geometry.Vector
+	VVector             geometry.Vector
+	WVector             geometry.Vector
 	ApertureRadius      float64
 	FocalDistance       float64
 	DepthOfFieldSamples int
@@ -25,7 +26,7 @@ type Camera struct {
 	isDraft             bool
 }
 
-func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontalFovDeg float64, apertureRadius float64,
+func NewCamera(viewCenter geometry.Ray, upDirection geometry.Vector, width, height int, horizontalFovDeg float64, apertureRadius float64,
 	focalDistance float64, depthOfFieldSamples int, supersampleFactor int) (*Camera, error) {
 	// Check for validity of dimensions.
 	if width <= 0 || height <= 0 {
@@ -44,7 +45,7 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 	wXyz := upDirection.ToUnit()
 
 	return &Camera{
-		Point:               viewCenter.Point,
+		Point:               viewCenter.Origin,
 		Width:               width,
 		Height:              height,
 		PixelSize:           pixelSize,
@@ -60,7 +61,7 @@ func NewCamera(viewCenter Ray, upDirection Vector, width, height int, horizontal
 }
 
 func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex, supersampleFactor, supersampleIndexX,
-	supersampleIndexY int) Ray {
+	supersampleIndexY int) geometry.Ray {
 	w := (float64(camera.Height*supersampleFactor)/2 - float64(y*supersampleFactor+supersampleIndexY+1) + 0.5) *
 		camera.PixelSize / float64(supersampleFactor)
 	u := (float64(x*supersampleFactor+supersampleIndexX) - float64(camera.Width*supersampleFactor)/2 + 0.5) *
@@ -77,7 +78,7 @@ func (camera *Camera) GetRay(x, y, depthOfFieldSampleIndex, supersampleFactor, s
 	modifiedOrigin :=
 		camera.Point.Translate(camera.UVector.Multiply(deltaU)).Translate(camera.WVector.Multiply(deltaW))
 
-	return Ray{Point: modifiedOrigin, Direction: modifiedOrigin.VectorTo(focalPlanePoint).ToUnit()}
+	return geometry.Ray{Origin: modifiedOrigin, Direction: modifiedOrigin.VectorTo(focalPlanePoint).ToUnit()}
 }
 
 func (camera *Camera) Render(scene *Scene) *image.RGBA {

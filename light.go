@@ -1,9 +1,11 @@
 package main
 
+import "github.com/patfair/raytracer/geometry"
+
 type Light interface {
-	Direction(point Point, sampleNumber, numSamples int) Vector
+	Direction(point geometry.Point, sampleNumber, numSamples int) geometry.Vector
 	Color() Color
-	Intensity(point Point) float64
+	Intensity(point geometry.Point) float64
 	NumSamples() int
-	IsBlockedByIntersection(point Point, intersection *Intersection) bool
+	IsBlockedByIntersection(point geometry.Point, intersection *geometry.Intersection) bool
 }

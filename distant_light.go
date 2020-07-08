@@ -1,16 +1,19 @@
 package main
 
-import "math/rand"
+import (
+	"github.com/patfair/raytracer/geometry"
+	"math/rand"
+)
 
 type DistantLight struct {
-	direction          Vector
+	direction          geometry.Vector
 	color              Color
 	intensity          float64
 	directionVariation float64
 	numSamples         int
 }
 
-func (light DistantLight) Direction(point Point, sampleNumber, numSamples int) Vector {
+func (light DistantLight) Direction(point geometry.Point, sampleNumber, numSamples int) geometry.Vector {
 	nominalDirection := light.direction.ToUnit()
 	if light.directionVariation == 0 || numSamples <= 1 {
 		return nominalDirection
@@ -29,7 +32,7 @@ func (light DistantLight) Color() Color {
 	return light.color
 }
 
-func (light DistantLight) Intensity(point Point) float64 {
+func (light DistantLight) Intensity(point geometry.Point) float64 {
 	return light.intensity
 }
 
@@ -37,7 +40,7 @@ func (light DistantLight) NumSamples() int {
 	return light.numSamples
 }
 
-func (light DistantLight) IsBlockedByIntersection(point Point, intersection *Intersection) bool {
+func (light DistantLight) IsBlockedByIntersection(point geometry.Point, intersection *geometry.Intersection) bool {
 	// Intersecting distances are always closer than a distant light, which is infinitely far away.
 	return true
 }

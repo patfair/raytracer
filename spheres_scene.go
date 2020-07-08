@@ -1,20 +1,22 @@
 package main
 
+import "github.com/patfair/raytracer/geometry"
+
 func SpheresScene() (*Scene, *Camera, error) {
-	tealSphere := newSphere(Point{0, 20, 1}, Color{0.1, 0.7, 1})
-	greenSphere := newSphere(Point{-2, 15, 1}, Color{0, 0.4, 0})
-	redSphere := newSphere(Point{2.5, 21, 1}, Color{0.8, 0, 0})
-	blueSphere := newSphere(Point{1, 9, 1}, Color{0, 0.3, 0.8})
-	yellowSphere := newSphere(Point{-3, 10, 1}, Color{0.9, 0.7, 0})
-	purpleSphere := newSphere(Point{4, 10.5, 1}, Color{0.75, 0.2, 0.8})
-	graySphere := newSphere(Point{3.5, 16, 1}, Color{0.8, 0.8, 0.8})
+	tealSphere := newSphere(geometry.Point{0, 20, 1}, Color{0.1, 0.7, 1})
+	greenSphere := newSphere(geometry.Point{-2, 15, 1}, Color{0, 0.4, 0})
+	redSphere := newSphere(geometry.Point{2.5, 21, 1}, Color{0.8, 0, 0})
+	blueSphere := newSphere(geometry.Point{1, 9, 1}, Color{0, 0.3, 0.8})
+	yellowSphere := newSphere(geometry.Point{-3, 10, 1}, Color{0.9, 0.7, 0})
+	purpleSphere := newSphere(geometry.Point{4, 10.5, 1}, Color{0.75, 0.2, 0.8})
+	graySphere := newSphere(geometry.Point{3.5, 16, 1}, Color{0.8, 0.8, 0.8})
 
 	surfaces := []Surface{
 		// XY plane
 		Plane{
-			Corner: Point{-50, -50, 0},
-			Width:  Vector{100, 0, 0},
-			Height: Vector{0, 100, 0},
+			Corner: geometry.Point{-50, -50, 0},
+			Width:  geometry.Vector{100, 0, 0},
+			Height: geometry.Vector{0, 100, 0},
 			shadingProperties: ShadingProperties{
 				DiffuseTexture: CheckerboardTexture{Color{0.9, 0.75, 0.55}, Color{0.2, 0.1, .05}, 1.5, 1.5},
 				Opacity:        1,
@@ -35,9 +37,9 @@ func SpheresScene() (*Scene, *Camera, error) {
 	glassBaseHeight := 0.05
 	glassPaneWidth := 0.1
 	glassPane := Plane{
-		Corner: Point{-2.5, 8, glassBaseHeight},
-		Width:  Vector{1.5, 0, 0},
-		Height: Vector{0, 0, 2},
+		Corner: geometry.Point{-2.5, 8, glassBaseHeight},
+		Width:  geometry.Vector{1.5, 0, 0},
+		Height: geometry.Vector{0, 0, 2},
 		shadingProperties: ShadingProperties{
 			DiffuseTexture:    SolidTexture{Color{1, 1, 1}},
 			SpecularExponent:  100,
@@ -54,9 +56,9 @@ func SpheresScene() (*Scene, *Camera, error) {
 	// Base for glass panel
 	margin := 0.03
 	glassBase := Plane{
-		Corner: Point{glassPane.Corner.X - margin, glassPane.Corner.Y + margin, 0},
-		Width:  Vector{glassPane.Width.X + 2*margin, 0, 0},
-		Height: Vector{0, 0, glassBaseHeight},
+		Corner: geometry.Point{glassPane.Corner.X - margin, glassPane.Corner.Y + margin, 0},
+		Width:  geometry.Vector{glassPane.Width.X + 2*margin, 0, 0},
+		Height: geometry.Vector{0, 0, glassBaseHeight},
 		shadingProperties: ShadingProperties{
 			DiffuseTexture: SolidTexture{Color{1, 1, 1}},
 			Opacity:        1,
@@ -69,7 +71,7 @@ func SpheresScene() (*Scene, *Camera, error) {
 
 	lights := []Light{
 		PointLight{
-			point:      Point{10, 0, 30},
+			point:      geometry.Point{10, 0, 30},
 			color:      Color{1, 1, 0.8},
 			intensity:  30000,
 			radius:     2,
@@ -77,20 +79,20 @@ func SpheresScene() (*Scene, *Camera, error) {
 		},
 	}
 
-	cameraOrigin := Point{0, 0, 3}
-	focalDistance := cameraOrigin.VectorTo(blueSphere.Center).Norm()
-	camera, err := NewCamera(Ray{cameraOrigin, Vector{0, 1, -0.2}}, Vector{0, 0.2, 1}, 1920, 1080, 40, 0.06,
+	cameraOrigin := geometry.Point{0, 0, 3}
+	focalDistance := cameraOrigin.DistanceTo(blueSphere.Center)
+	camera, err := NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1}, 3840, 2160, 40, 0.06,
 		focalDistance, 25, 2)
 
 	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: Color{0, 0, 0}}, camera, err
 }
 
-func newSphere(point Point, color Color) Sphere {
+func newSphere(point geometry.Point, color Color) Sphere {
 	return Sphere{
 		Center:           point,
 		Radius:           1,
-		ZenithReference:  Vector{1, 0, 0},
-		AzimuthReference: Vector{0, 1, 0},
+		ZenithReference:  geometry.Vector{1, 0, 0},
+		AzimuthReference: geometry.Vector{0, 1, 0},
 		shadingProperties: ShadingProperties{
 			DiffuseTexture:    SolidTexture{color},
 			SpecularExponent:  200,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cheggaaa/pb/v3"
+	"github.com/patfair/raytracer/geometry"
 	"math"
 )
 
@@ -57,7 +58,7 @@ func (request *RaytraceRowRequest) Run() {
 	request.DoneChannel <- struct{}{}
 }
 
-func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, refractionIndex float64,
+func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth int, refractionIndex float64,
 	supersamplingRequired bool) Color {
 	pixelColor := scene.BackgroundColor
 
@@ -66,7 +67,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, ref
 		return pixelColor
 	}
 
-	var closestIntersection *Intersection
+	var closestIntersection *geometry.Intersection
 	var closestSurface Surface
 	for _, surface := range scene.Surfaces {
 		if intersection := surface.Intersection(ray); intersection != nil {
@@ -117,7 +118,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, ref
 			refractionPoint :=
 				closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(-reflectionBias))
 
-			refractedRay := Ray{refractionPoint, refractionDirection.ToUnit()}
+			refractedRay := geometry.Ray{refractionPoint, refractionDirection.ToUnit()}
 			refractedColor = request.castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex,
 				supersamplingRequired)
 		}
@@ -128,7 +129,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, ref
 			// Bias the intersection point off the surface slightly to avoid immediate self-intersection.
 			reflectedPoint := closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(reflectionBias))
 
-			reflectedRay := Ray{reflectedPoint, reflectedDirection.ToUnit()}
+			reflectedRay := geometry.Ray{reflectedPoint, reflectedDirection.ToUnit()}
 			reflectedColor = request.castRay(scene, reflectedRay, depth+1, refractionIndex, supersamplingRequired)
 		}
 
@@ -141,8 +142,8 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray Ray, depth int, ref
 				for i := 0; i < numSamples; i++ {
 					// Check if there is an object between the intersection point and the light source, in which case
 					// it should cast a shadow.
-					lightRay := Ray{
-						Point:     closestIntersection.Point,
+					lightRay := geometry.Ray{
+						Origin:    closestIntersection.Point,
 						Direction: light.Direction(closestIntersection.Point, i, numSamples).Multiply(-1).ToUnit(),
 					}
 					transparency := 1.0

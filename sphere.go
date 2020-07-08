@@ -1,19 +1,20 @@
 package main
 
 import (
+	"github.com/patfair/raytracer/geometry"
 	"math"
 )
 
 type Sphere struct {
-	Center            Point
+	Center            geometry.Point
 	Radius            float64
-	ZenithReference   Vector
-	AzimuthReference  Vector
+	ZenithReference   geometry.Vector
+	AzimuthReference  geometry.Vector
 	shadingProperties ShadingProperties
 }
 
-func (sphere Sphere) Intersection(ray Ray) *Intersection {
-	rayOriginToSphereCenter := ray.Point.VectorTo(sphere.Center)
+func (sphere Sphere) Intersection(ray geometry.Ray) *geometry.Intersection {
+	rayOriginToSphereCenter := ray.Origin.VectorTo(sphere.Center)
 	midpointDistance := ray.Direction.ToUnit().Dot(rayOriginToSphereCenter)
 	if midpointDistance < 0 {
 		// The sphere is behind the ray; there is no intersection.
@@ -29,17 +30,17 @@ func (sphere Sphere) Intersection(ray Ray) *Intersection {
 
 	halfChordDistance := math.Sqrt(radiusSquared - rayDistanceSquared)
 	closestIntersectionDistance := midpointDistance - halfChordDistance
-	closestIntersectionPoint := ray.Point.Translate(ray.Direction.ToUnit().Multiply(closestIntersectionDistance))
+	closestIntersectionPoint := ray.Origin.Translate(ray.Direction.ToUnit().Multiply(closestIntersectionDistance))
 	normal := sphere.Center.VectorTo(closestIntersectionPoint).ToUnit()
 
-	return &Intersection{
+	return &geometry.Intersection{
 		Point:    closestIntersectionPoint,
 		Distance: closestIntersectionDistance,
 		Normal:   normal,
 	}
 }
 
-func (sphere Sphere) AlbedoAt(point Point) Color {
+func (sphere Sphere) AlbedoAt(point geometry.Point) Color {
 	theta, phi := sphere.toTextureCoordinates(point)
 	return sphere.shadingProperties.DiffuseTexture.AlbedoAt(theta, phi)
 }
@@ -48,7 +49,7 @@ func (sphere Sphere) ShadingProperties() ShadingProperties {
 	return sphere.shadingProperties
 }
 
-func (sphere Sphere) toTextureCoordinates(point Point) (float64, float64) {
+func (sphere Sphere) toTextureCoordinates(point geometry.Point) (float64, float64) {
 	// Convert first to rectangular coordinates relative to the zenith and azimuth.
 	vector := sphere.Center.VectorTo(point)
 	uDirection := sphere.AzimuthReference.ToUnit()

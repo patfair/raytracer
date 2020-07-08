@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/patfair/raytracer/geometry"
 	"math"
 )
 
@@ -8,26 +9,26 @@ type Disc struct {
 	plane Plane
 }
 
-func (disc Disc) Intersection(ray Ray) *Intersection {
+func (disc Disc) Intersection(ray geometry.Ray) *geometry.Intersection {
 	denominator := disc.plane.Normal().Dot(ray.Direction.ToUnit())
 	if denominator == 0 {
 		// The ray is parallel to the plane; they do not intersect.
 		return nil
 	}
 
-	distance := ray.Point.VectorTo(disc.plane.Corner).Dot(disc.plane.Normal()) / denominator
+	distance := ray.Origin.VectorTo(disc.plane.Corner).Dot(disc.plane.Normal()) / denominator
 	if distance < 0 {
 		// The plane is behind the ray.
 		return nil
 	}
-	point := ray.Point.Translate(ray.Direction.ToUnit().Multiply(distance))
+	point := ray.Origin.Translate(ray.Direction.ToUnit().Multiply(distance))
 
 	if !disc.isPointWithinLimits(point) {
 		// The ray intersects outside the width and height of the plane.
 		return nil
 	}
 
-	intersection := new(Intersection)
+	intersection := new(geometry.Intersection)
 	intersection.Distance = distance
 	intersection.Point = point
 	intersection.Normal = disc.plane.Normal()
@@ -38,7 +39,7 @@ func (disc Disc) Intersection(ray Ray) *Intersection {
 	return intersection
 }
 
-func (disc Disc) AlbedoAt(point Point) Color {
+func (disc Disc) AlbedoAt(point geometry.Point) Color {
 	r, phi := disc.toTextureCoordinates(point)
 	return disc.plane.ShadingProperties().DiffuseTexture.AlbedoAt(r, phi)
 }
@@ -51,7 +52,7 @@ func (disc Disc) ShadingProperties() ShadingProperties {
 	return disc.plane.ShadingProperties()
 }
 
-func (disc Disc) toTextureCoordinates(point Point) (float64, float64) {
+func (disc Disc) toTextureCoordinates(point geometry.Point) (float64, float64) {
 	// Convert first to planar coordinates.
 	vector := disc.plane.Corner.VectorTo(point)
 	u := vector.Dot(disc.plane.Width.ToUnit())
@@ -63,7 +64,7 @@ func (disc Disc) toTextureCoordinates(point Point) (float64, float64) {
 	return r, phi
 }
 
-func (disc Disc) isPointWithinLimits(point Point) bool {
+func (disc Disc) isPointWithinLimits(point geometry.Point) bool {
 	u, v := disc.plane.toTextureCoordinates(point)
 	centerDistance := math.Sqrt(u*u + v*v)
 	return centerDistance <= disc.Radius()
