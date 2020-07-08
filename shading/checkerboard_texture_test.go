@@ -1,11 +1,13 @@
-package main
+// Copyright 2020 Patrick Fairbank. All Rights Reserved.
+
+package shading
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestCheckerboardAlbedoAt(t *testing.T) {
+func TestCheckerboardTexture_AlbedoAt(t *testing.T) {
 	color1 := Color{1, 0, 0}
 	color2 := Color{0, 0, 1}
 	uPitch := 1.0

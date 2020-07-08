@@ -1,15 +1,16 @@
 package main
 
 import (
+	"github.com/patfair/raytracer/shading"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestArePixelsSimilar(t *testing.T) {
 	size := 5
-	pixels := make([][]Color, size)
+	pixels := make([][]shading.Color, size)
 	for i := 0; i < size; i++ {
-		pixels[i] = make([]Color, size)
+		pixels[i] = make([]shading.Color, size)
 	}
 
 	for i, row := range pixels {

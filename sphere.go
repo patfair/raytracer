@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"math"
 )
 
@@ -10,7 +11,7 @@ type Sphere struct {
 	Radius            float64
 	ZenithReference   geometry.Vector
 	AzimuthReference  geometry.Vector
-	shadingProperties ShadingProperties
+	shadingProperties shading.ShadingProperties
 }
 
 func (sphere Sphere) Intersection(ray geometry.Ray) *geometry.Intersection {
@@ -40,12 +41,12 @@ func (sphere Sphere) Intersection(ray geometry.Ray) *geometry.Intersection {
 	}
 }
 
-func (sphere Sphere) AlbedoAt(point geometry.Point) Color {
+func (sphere Sphere) AlbedoAt(point geometry.Point) shading.Color {
 	theta, phi := sphere.toTextureCoordinates(point)
 	return sphere.shadingProperties.DiffuseTexture.AlbedoAt(theta, phi)
 }
 
-func (sphere Sphere) ShadingProperties() ShadingProperties {
+func (sphere Sphere) ShadingProperties() shading.ShadingProperties {
 	return sphere.shadingProperties
 }
 

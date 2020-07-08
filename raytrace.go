@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"math"
 )
 
@@ -19,8 +20,8 @@ type RaytraceRowRequest struct {
 	Camera      *Camera
 	RowIndex    int
 	IsDraft     bool
-	DraftPixels [][]Color
-	Pixels      [][]Color
+	DraftPixels [][]shading.Color
+	Pixels      [][]shading.Color
 	Progress    *pb.ProgressBar
 	DoneChannel chan struct{}
 }
@@ -35,7 +36,7 @@ func (request *RaytraceRowRequest) Run() {
 			supersampleFactor = 1
 		}
 
-		var averagePixel Color
+		var averagePixel shading.Color
 		for n := 0; n < camera.DepthOfFieldSamples; n++ {
 			for a := 0; a < supersampleFactor; a++ {
 				for b := 0; b < supersampleFactor; b++ {
@@ -59,7 +60,7 @@ func (request *RaytraceRowRequest) Run() {
 }
 
 func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth int, refractionIndex float64,
-	supersamplingRequired bool) Color {
+	supersamplingRequired bool) shading.Color {
 	pixelColor := scene.BackgroundColor
 
 	// Limit recursion caused by reflecting rays off multiple surfaces.
@@ -84,7 +85,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 		kReflection := shadingProperties.Reflectivity * shadingProperties.Opacity
 		kDiffuse := 1 - kRefraction - kReflection
 		kSpecular := shadingProperties.SpecularIntensity
-		var refractedColor, reflectedColor, diffuseColor, specularColor Color
+		var refractedColor, reflectedColor, diffuseColor, specularColor shading.Color
 
 		if kRefraction > 0 {
 			cosIn := -closestIntersection.Normal.Dot(ray.Direction)
@@ -193,7 +194,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 	return pixelColor
 }
 
-func isSupersamplingRequired(draftPixels [][]Color, x, y, numAdjacent int) bool {
+func isSupersamplingRequired(draftPixels [][]shading.Color, x, y, numAdjacent int) bool {
 	for i := y - numAdjacent; i <= y+numAdjacent; i++ {
 		for j := x - numAdjacent; j <= x+numAdjacent; j++ {
 			if !arePixelsSimilar(draftPixels, x, y, j, i) {
@@ -204,7 +205,7 @@ func isSupersamplingRequired(draftPixels [][]Color, x, y, numAdjacent int) bool 
 	return false
 }
 
-func arePixelsSimilar(draftPixels [][]Color, xA, yA, xB, yB int) bool {
+func arePixelsSimilar(draftPixels [][]shading.Color, xA, yA, xB, yB int) bool {
 	height := len(draftPixels)
 	if height == 0 {
 		return true

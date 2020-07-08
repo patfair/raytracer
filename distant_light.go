@@ -2,12 +2,13 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"math/rand"
 )
 
 type DistantLight struct {
 	direction          geometry.Vector
-	color              Color
+	color              shading.Color
 	intensity          float64
 	directionVariation float64
 	numSamples         int
@@ -28,7 +29,7 @@ func (light DistantLight) Direction(point geometry.Point, sampleNumber, numSampl
 	return direction.ToUnit()
 }
 
-func (light DistantLight) Color() Color {
+func (light DistantLight) Color() shading.Color {
 	return light.color
 }
 

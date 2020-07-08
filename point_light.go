@@ -2,13 +2,14 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"math"
 	"math/rand"
 )
 
 type PointLight struct {
 	point      geometry.Point
-	color      Color
+	color      shading.Color
 	intensity  float64
 	radius     float64
 	numSamples int
@@ -45,7 +46,7 @@ func (light PointLight) Direction(point geometry.Point, sampleNumber, numSamples
 	return randomPoint.VectorTo(point).ToUnit()
 }
 
-func (light PointLight) Color() Color {
+func (light PointLight) Color() shading.Color {
 	return light.color
 }
 

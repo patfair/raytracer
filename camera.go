@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"image"
 	"math"
 	"math/rand"
@@ -87,7 +88,7 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 	draftCamera.ApertureRadius = 0
 	draftCamera.DepthOfFieldSamples = 1
 	draftCamera.SupersampleFactor = 1
-	draftPixels := draftCamera.renderPixels(scene, true, [][]Color{})
+	draftPixels := draftCamera.renderPixels(scene, true, [][]shading.Color{})
 
 	fmt.Println("\nProducing final image...")
 	pixels := camera.renderPixels(scene, false, draftPixels)
@@ -101,13 +102,13 @@ func (camera *Camera) Render(scene *Scene) *image.RGBA {
 	return img
 }
 
-func (camera *Camera) renderPixels(scene *Scene, isDraft bool, draftPixels [][]Color) [][]Color {
+func (camera *Camera) renderPixels(scene *Scene, isDraft bool, draftPixels [][]shading.Color) [][]shading.Color {
 	// Set up progress bar for the console.
 	progress := pb.Full.Start(camera.Width * camera.Height)
 
-	pixels := make([][]Color, camera.Height)
+	pixels := make([][]shading.Color, camera.Height)
 	for i := 0; i < camera.Height; i++ {
-		pixels[i] = make([]Color, camera.Width)
+		pixels[i] = make([]shading.Color, camera.Width)
 	}
 
 	// Set up parallel jobs to take advantage of multiple processor cores.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"math"
 )
 
@@ -39,7 +40,7 @@ func (disc Disc) Intersection(ray geometry.Ray) *geometry.Intersection {
 	return intersection
 }
 
-func (disc Disc) AlbedoAt(point geometry.Point) Color {
+func (disc Disc) AlbedoAt(point geometry.Point) shading.Color {
 	r, phi := disc.toTextureCoordinates(point)
 	return disc.plane.ShadingProperties().DiffuseTexture.AlbedoAt(r, phi)
 }
@@ -48,7 +49,7 @@ func (disc Disc) Radius() float64 {
 	return disc.plane.Width.Norm()
 }
 
-func (disc Disc) ShadingProperties() ShadingProperties {
+func (disc Disc) ShadingProperties() shading.ShadingProperties {
 	return disc.plane.ShadingProperties()
 }
 

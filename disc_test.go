@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
 	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
@@ -13,8 +14,8 @@ func TestDiscToTextureCoordinates(t *testing.T) {
 			Corner: geometry.Point{1, 0, 5},
 			Width:  geometry.Vector{2, 0, 0},
 			Height: geometry.Vector{0, 1, 0},
-			shadingProperties: ShadingProperties{
-				DiffuseTexture: SolidTexture{Color{0, 0, 0}},
+			shadingProperties: shading.ShadingProperties{
+				DiffuseTexture: shading.SolidTexture{shading.Color{0, 0, 0}},
 				Opacity:        1,
 			},
 		},

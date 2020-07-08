@@ -1,12 +1,15 @@
 package main
 
-import "github.com/patfair/raytracer/geometry"
+import (
+	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/shading"
+)
 
 type Plane struct {
 	Corner            geometry.Point
 	Width             geometry.Vector
 	Height            geometry.Vector
-	shadingProperties ShadingProperties
+	shadingProperties shading.ShadingProperties
 }
 
 func (plane Plane) Normal() geometry.Vector {
@@ -43,12 +46,12 @@ func (plane Plane) Intersection(ray geometry.Ray) *geometry.Intersection {
 	return intersection
 }
 
-func (plane Plane) AlbedoAt(point geometry.Point) Color {
+func (plane Plane) AlbedoAt(point geometry.Point) shading.Color {
 	u, v := plane.toTextureCoordinates(point)
 	return plane.shadingProperties.DiffuseTexture.AlbedoAt(u, v)
 }
 
-func (plane Plane) ShadingProperties() ShadingProperties {
+func (plane Plane) ShadingProperties() shading.ShadingProperties {
 	return plane.shadingProperties
 }
 
