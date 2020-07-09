@@ -4,6 +4,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/patfair/raytracer/geometry"
 	"github.com/patfair/raytracer/shading"
+	"github.com/patfair/raytracer/surface"
 	"math"
 )
 
@@ -69,7 +70,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 	}
 
 	var closestIntersection *geometry.Intersection
-	var closestSurface Surface
+	var closestSurface surface.Surface
 	for _, surface := range scene.Surfaces {
 		if intersection := surface.Intersection(ray); intersection != nil {
 			if closestIntersection == nil || intersection.Distance < closestIntersection.Distance {
@@ -166,12 +167,13 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 						numSamples).Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
 						transparency / float64(numSamples)
-					diffuseColor.R += closestSurface.AlbedoAt(closestIntersection.Point).R / math.Pi * light.Color().R *
-						incidentLight
-					diffuseColor.G += closestSurface.AlbedoAt(closestIntersection.Point).G / math.Pi * light.Color().G *
-						incidentLight
-					diffuseColor.B += closestSurface.AlbedoAt(closestIntersection.Point).B / math.Pi * light.Color().B *
-						incidentLight
+					u, v := closestSurface.ToTextureCoordinates(closestIntersection.Point)
+					diffuseColor.R += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).R / math.Pi *
+						light.Color().R * incidentLight
+					diffuseColor.G += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).G / math.Pi *
+						light.Color().G * incidentLight
+					diffuseColor.B += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).B / math.Pi *
+						light.Color().B * incidentLight
 
 					// Calculate specular reflection.
 					specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
