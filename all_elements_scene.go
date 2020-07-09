@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/light"
 	"github.com/patfair/raytracer/shading"
 	"github.com/patfair/raytracer/surface"
 	"math"
@@ -163,33 +164,47 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		surfaces = append(surfaces, plane)
 	}
 
-	lights := []Light{
-		DistantLight{
-			direction:  geometry.Vector{-10, -10, -20},
-			color:      shading.Color{1, 1, 1},
-			intensity:  0.75,
-			numSamples: 1,
-		},
-		DistantLight{
-			direction:  geometry.Vector{-10, -10, -25},
-			color:      shading.Color{1, 1, 1},
-			intensity:  0.75,
-			numSamples: 1,
-		},
-		DistantLight{
-			direction:  geometry.Vector{-11, -9, -20},
-			color:      shading.Color{1, 1, 1},
-			intensity:  0.75,
-			numSamples: 1,
-		},
-		PointLight{
-			point:      geometry.Point{5, 1, 10},
-			color:      shading.Color{1, 1, 1},
-			intensity:  1000,
-			radius:     0,
-			numSamples: 1,
-		},
+	light1, err := light.NewDistantLight(
+		geometry.Vector{-10, -10, -20},
+		shading.Color{1, 1, 1},
+		0.75,
+		0,
+		1,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
+	light2, err := light.NewDistantLight(
+		geometry.Vector{-10, -10, -25},
+		shading.Color{1, 1, 1},
+		0.75,
+		0,
+		1,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	light3, err := light.NewDistantLight(
+		geometry.Vector{-11, -9, -20},
+		shading.Color{1, 1, 1},
+		0.75,
+		0,
+		1,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	light4, err := light.NewPointLight(
+		geometry.Point{5, 1, 10},
+		shading.Color{1, 1, 1},
+		1000,
+		0,
+		1,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	lights := []light.Light{light1, light2, light3, light4}
 
 	camera, err := NewCamera(geometry.Ray{geometry.Point{10, 10, 5}, geometry.Vector{-10, -10, -5}},
 		geometry.Vector{-10, -10, 40}, 3840, 2160, 30, 0, 0, 1, 2)

@@ -1,18 +1,46 @@
-package main
+// Copyright 2020 Patrick Fairbank. All Rights Reserved.
+
+package light
 
 import (
+	"errors"
 	"github.com/patfair/raytracer/geometry"
 	"github.com/patfair/raytracer/shading"
 	"math"
 	"math/rand"
 )
 
+// Represents a light source located at a specific point emitting light in all directions.
 type PointLight struct {
-	point      geometry.Point
+	point      geometry.Point // Point at which the light is located
 	color      shading.Color
-	intensity  float64
-	radius     float64
+	intensity  float64 // Intensity of the light at the source
+	radius     float64 // Radius in which the source of the light can be randomly varied
 	numSamples int
+}
+
+func NewPointLight(point geometry.Point, color shading.Color, intensity float64, radius float64,
+	numSamples int) (PointLight, error) {
+	if intensity <= 0 {
+		return PointLight{}, errors.New("intensity must be positive")
+	}
+	if radius < 0 {
+		return PointLight{}, errors.New("radius must be non-negative")
+	}
+	if numSamples < 1 {
+		return PointLight{}, errors.New("number of samples must be at least 1")
+	}
+	if radius == 0 && numSamples > 1 {
+		return PointLight{}, errors.New("radius must be non-zero if number of samples is greater than 1")
+	}
+
+	return PointLight{
+		point:      point,
+		color:      color,
+		intensity:  intensity,
+		radius:     radius,
+		numSamples: numSamples,
+	}, nil
 }
 
 func (light PointLight) Direction(point geometry.Point, sampleNumber, numSamples int) geometry.Vector {

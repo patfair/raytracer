@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/patfair/raytracer/geometry"
+	"github.com/patfair/raytracer/light"
 	"github.com/patfair/raytracer/shading"
 	"github.com/patfair/raytracer/surface"
 )
@@ -109,15 +110,17 @@ func SpheresScene() (*Scene, *Camera, error) {
 		surfaces = append(surfaces, plane)
 	}
 
-	lights := []Light{
-		PointLight{
-			point:      geometry.Point{10, 0, 30},
-			color:      shading.Color{1, 1, 0.8},
-			intensity:  30000,
-			radius:     2,
-			numSamples: 20,
-		},
+	pointLight, err := light.NewPointLight(
+		geometry.Point{10, 0, 30},
+		shading.Color{1, 1, 0.8},
+		30000,
+		2,
+		20,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
+	lights := []light.Light{pointLight}
 
 	cameraOrigin := geometry.Point{0, 0, 3}
 	focalDistance := cameraOrigin.DistanceTo(blueSphere.Center())

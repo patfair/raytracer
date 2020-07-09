@@ -8,6 +8,11 @@ import (
 	"testing"
 )
 
+func TestAssertRayEqual(t *testing.T) {
+	ray := Ray{Origin: Point{1, 2, 3}, Direction: Vector{-4, -5, -6}}
+	AssertRayEqual(t, ray, ray)
+}
+
 func TestRay_String(t *testing.T) {
 	ray := Ray{
 		Origin:    Point{1.234, -14.567, 0.088888},
