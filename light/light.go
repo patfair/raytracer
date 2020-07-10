@@ -7,7 +7,7 @@ import (
 	"github.com/patfair/raytracer/shading"
 )
 
-// Represents a source of light within a scene.
+// Represents a source of light within a set.
 type Light interface {
 	// Determines the direction of the light incident to the given point. Depending on the light source's properties and
 	// the value of the sampling arguments, the direction may include some random variation in order to produce soft

@@ -1,57 +1,81 @@
-package main
+// Copyright 2020 Patrick Fairbank. All Rights Reserved.
+
+package example
 
 import (
 	"github.com/patfair/raytracer/geometry"
 	"github.com/patfair/raytracer/light"
+	"github.com/patfair/raytracer/render"
 	"github.com/patfair/raytracer/shading"
 	"github.com/patfair/raytracer/surface"
 )
 
-func SpheresScene() (*Scene, *Camera, error) {
+// Creates a scene with a bunch of uniformly sized spheres on a flat checkerboard plane.
+func SpheresScene() (*render.Scene, error) {
+	blueSphereCenter := geometry.Point{1, 9, 1}
+	cameraOrigin := geometry.Point{0, 0, 3}
+	focalDistance := cameraOrigin.DistanceTo(blueSphereCenter)
+	camera, err := render.NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1},
+		40, 0.06, focalDistance, 25, 2)
+	if err != nil {
+		return nil, err
+	}
+
+	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0, 0, 0}}
+
 	// Floor plane
 	xyPlane, err := surface.NewPlane(
 		geometry.Point{-50, -50, 0},
 		geometry.Vector{100, 0, 0},
 		geometry.Vector{0, 100, 0},
 		shading.ShadingProperties{
-			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.75, 0.55}, shading.Color{0.2, 0.1, .05}, 1.5, 1.5},
-			Opacity:        1,
-			Reflectivity:   0.2,
+			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.75, 0.55}, shading.Color{0.2, 0.1, .05},
+				1.5, 1.5},
+			Opacity:      1,
+			Reflectivity: 0.2,
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(xyPlane)
 
 	// Colored spheres
 	tealSphere, err := newSphere(geometry.Point{0, 20, 1}, shading.Color{0.1, 0.7, 1})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(tealSphere)
 	greenSphere, err := newSphere(geometry.Point{-2, 15, 1}, shading.Color{0, 0.4, 0})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(greenSphere)
 	redSphere, err := newSphere(geometry.Point{2.5, 21, 1}, shading.Color{0.8, 0, 0})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	blueSphere, err := newSphere(geometry.Point{1, 9, 1}, shading.Color{0, 0.3, 0.8})
+	scene.AddSurface(redSphere)
+	blueSphere, err := newSphere(blueSphereCenter, shading.Color{0, 0.3, 0.8})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(blueSphere)
 	yellowSphere, err := newSphere(geometry.Point{-3, 10, 1}, shading.Color{0.9, 0.7, 0})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(yellowSphere)
 	purpleSphere, err := newSphere(geometry.Point{4, 10.5, 1}, shading.Color{0.75, 0.2, 0.8})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(purpleSphere)
 	graySphere, err := newSphere(geometry.Point{3.5, 16, 1}, shading.Color{0.8, 0.8, 0.8})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(graySphere)
 
 	// Glass panel
 	glassBaseHeight := 0.05
@@ -73,7 +97,10 @@ func SpheresScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
+	}
+	for _, plane := range glassPanePlanes {
+		scene.AddSurface(plane)
 	}
 
 	// Base for glass panel
@@ -90,24 +117,10 @@ func SpheresScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	surfaces := []surface.Surface{
-		xyPlane,
-		tealSphere,
-		greenSphere,
-		redSphere,
-		blueSphere,
-		yellowSphere,
-		purpleSphere,
-		graySphere,
-	}
-	for _, plane := range glassPanePlanes {
-		surfaces = append(surfaces, plane)
+		return nil, err
 	}
 	for _, plane := range glassBasePlanes {
-		surfaces = append(surfaces, plane)
+		scene.AddSurface(plane)
 	}
 
 	pointLight, err := light.NewPointLight(
@@ -118,16 +131,11 @@ func SpheresScene() (*Scene, *Camera, error) {
 		20,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	lights := []light.Light{pointLight}
+	scene.AddLight(pointLight)
 
-	cameraOrigin := geometry.Point{0, 0, 3}
-	focalDistance := cameraOrigin.DistanceTo(blueSphere.Center())
-	camera, err := NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1}, 3840,
-		2160, 40, 0.06, focalDistance, 25, 2)
-
-	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: shading.Color{0, 0, 0}}, camera, err
+	return &scene, nil
 }
 
 func newSphere(point geometry.Point, color shading.Color) (surface.Sphere, error) {

@@ -1,4 +1,6 @@
-package main
+// Copyright 2020 Patrick Fairbank. All Rights Reserved.
+
+package render
 
 import (
 	"github.com/cheggaaa/pb/v3"
@@ -16,51 +18,69 @@ const (
 	adjacentPixels     = 4
 )
 
-type RaytraceRowRequest struct {
-	Scene       *Scene
-	Camera      *Camera
-	RowIndex    int
-	IsDraft     bool
-	DraftPixels [][]shading.Color
-	Pixels      [][]shading.Color
-	Progress    *pb.ProgressBar
-	DoneChannel chan struct{}
+type RenderType int
+
+const (
+	RenderRoughPassOnly RenderType = iota
+	RenderPreFinishRoughPass
+	RenderFinishPass
+)
+
+// Represents an operation to render a single row of pixels within an image.
+type RaytraceRowOperation struct {
+	Scene           *Scene            // Scene to render
+	RenderType      RenderType        // Whether this is a rough or finishing pass
+	Width           int               // Width of the full image
+	Height          int               // Height of the full image
+	RowIndex        int               // Which single row along the height this operation is for
+	RoughPassPixels [][]shading.Color // Output of the previous rough pass if this is the finish pass
+	OutputPixels    [][]shading.Color // Array of pixels for the full image to write the rendered row to
+	Progress        *pb.ProgressBar   // Progress indicator to update after rendering each pixel
+	DoneChannel     chan struct{}     // Channel to send an empty message to to signal completion of the operation
 }
 
-func (request *RaytraceRowRequest) Run() {
-	camera := request.Camera
-	for j := 0; j < camera.Width; j++ {
-		supersampleFactor := camera.SupersampleFactor
-		supersamplingRequired := !request.IsDraft && isSupersamplingRequired(request.DraftPixels, j, request.RowIndex,
-			adjacentPixels)
+// Executes the rendering operation synchronously.
+func (operation *RaytraceRowOperation) Run() {
+	camera := operation.Scene.Camera
+	for j := 0; j < operation.Width; j++ {
+		// Disable multi-pass ray casting if only doing a rough pass.
+		supersamplingRequired := operation.RenderType == RenderFinishPass &&
+			operation.isSupersamplingRequired(j, adjacentPixels)
+		depthOfFieldSamples := camera.DepthOfFieldSamples
+		antiAliasSamples := camera.AntiAliasSamples
 		if !supersamplingRequired {
-			supersampleFactor = 1
+			depthOfFieldSamples = 1
+			antiAliasSamples = 1
 		}
 
+		// Supersample and average together multiple rays for each pixel for depth of field and antialiasing.
 		var averagePixel shading.Color
-		for n := 0; n < camera.DepthOfFieldSamples; n++ {
-			for a := 0; a < supersampleFactor; a++ {
-				for b := 0; b < supersampleFactor; b++ {
-					ray := camera.GetRay(j, request.RowIndex, n, supersampleFactor, a, b)
-					pixel := request.castRay(request.Scene, ray, 0, 1, supersamplingRequired)
+		for n := 0; n < depthOfFieldSamples; n++ {
+			for a := 0; a < antiAliasSamples; a++ {
+				for b := 0; b < antiAliasSamples; b++ {
+					ray := camera.GetRay(operation.Width, operation.Height, j, operation.RowIndex, n,
+						depthOfFieldSamples, a, b, antiAliasSamples)
+					pixel := operation.castRay(operation.Scene, ray, 0, 1, supersamplingRequired)
 					averagePixel.R += pixel.R
 					averagePixel.G += pixel.G
 					averagePixel.B += pixel.B
 				}
 			}
 		}
+		averagePixel.R /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
+		averagePixel.G /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
+		averagePixel.B /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
 
-		averagePixel.R /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
-		averagePixel.G /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
-		averagePixel.B /= float64(camera.DepthOfFieldSamples * supersampleFactor * supersampleFactor)
-		request.Pixels[request.RowIndex][j] = averagePixel
-		request.Progress.Increment()
+		operation.OutputPixels[operation.RowIndex][j] = averagePixel
+		operation.Progress.Increment()
 	}
 
-	request.DoneChannel <- struct{}{}
+	// Signal to the worker coordinator that this row is done being rendered.
+	operation.DoneChannel <- struct{}{}
 }
 
-func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth int, refractionIndex float64,
+// Returns the color that the given ray is pointing at. Contains the main logic of the raytracer.
+func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, depth int, refractionIndex float64,
 	supersamplingRequired bool) shading.Color {
 	pixelColor := scene.BackgroundColor
 
@@ -69,6 +89,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 		return pixelColor
 	}
 
+	// Find the closest surface in the scene that the ray intersects, if any.
 	var closestIntersection *geometry.Intersection
 	var closestSurface surface.Surface
 	for _, surface := range scene.Surfaces {
@@ -88,6 +109,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 		kSpecular := shadingProperties.SpecularIntensity
 		var refractedColor, reflectedColor, diffuseColor, specularColor shading.Color
 
+		// Determine the component of the ray from light passing through a transparent surface.
 		if kRefraction > 0 {
 			cosIn := -closestIntersection.Normal.Dot(ray.Direction)
 			etaIn := refractionIndex
@@ -121,10 +143,11 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 				closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(-reflectionBias))
 
 			refractedRay := geometry.Ray{refractionPoint, refractionDirection.ToUnit()}
-			refractedColor = request.castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex,
+			refractedColor = operation.castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex,
 				supersamplingRequired)
 		}
 
+		// Determine the component of the ray from light reflected off a mirrored surface.
 		reflectedDirection := ray.Direction.Add(
 			closestIntersection.Normal.Multiply(-2 * closestIntersection.Normal.Dot(ray.Direction))).ToUnit()
 		if kReflection > 0 {
@@ -132,13 +155,16 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 			reflectedPoint := closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(reflectionBias))
 
 			reflectedRay := geometry.Ray{reflectedPoint, reflectedDirection.ToUnit()}
-			reflectedColor = request.castRay(scene, reflectedRay, depth+1, refractionIndex, supersamplingRequired)
+			reflectedColor = operation.castRay(scene, reflectedRay, depth+1, refractionIndex, supersamplingRequired)
 		}
 
+		// Determine the component of the ray from the scene's lights directly illuminating the surface.
 		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
+				// Cast multiple slightly different rays from the same light to simulate soft shadows, if enabled for
+				// the light and not doing a draft render.
 				numSamples := light.NumSamples()
-				if !supersamplingRequired && !request.IsDraft {
+				if operation.RenderType == RenderRoughPassOnly || !supersamplingRequired {
 					numSamples = 1
 				}
 				for i := 0; i < numSamples; i++ {
@@ -151,7 +177,8 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 					transparency := 1.0
 					for _, surface := range scene.Surfaces {
 						if intersection := surface.Intersection(lightRay); intersection != nil {
-							// Require a minimum distance to avoid a surface from shadowing itself.
+							// Require a minimum distance to prevent floating-point imprecision causing a surface to
+							// cast a shadow on itself.
 							if intersection.Distance > shadowBias {
 								if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
 									transparency *= 1 - surface.ShadingProperties().Opacity
@@ -160,9 +187,12 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 						}
 					}
 					if transparency == 0 {
+						// The light is not reaching the intersection point at all; skip calculating its component color
+						// from this light source since it will just be black.
 						continue
 					}
 
+					// Calculate the diffuse component, influenced by the color of the surface itself.
 					incidentDotProduct := light.Direction(closestIntersection.Point, i,
 						numSamples).Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
@@ -185,6 +215,7 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 			}
 		}
 
+		// Sum up the various components to obtain the final color for the ray.
 		pixelColor.R = kRefraction*refractedColor.R + kReflection*reflectedColor.R + kDiffuse*diffuseColor.R +
 			kSpecular*specularColor.R
 		pixelColor.G = kRefraction*refractedColor.G + kReflection*reflectedColor.G + kDiffuse*diffuseColor.G +
@@ -196,10 +227,12 @@ func (request *RaytraceRowRequest) castRay(scene *Scene, ray geometry.Ray, depth
 	return pixelColor
 }
 
-func isSupersamplingRequired(draftPixels [][]shading.Color, x, y, numAdjacent int) bool {
-	for i := y - numAdjacent; i <= y+numAdjacent; i++ {
+// Examines the image produced by the rough pass and returns true if the given pixel needs to be supersampled in the
+// finish pass.
+func (operation *RaytraceRowOperation) isSupersamplingRequired(x, numAdjacent int) bool {
+	for i := operation.RowIndex - numAdjacent; i <= operation.RowIndex+numAdjacent; i++ {
 		for j := x - numAdjacent; j <= x+numAdjacent; j++ {
-			if !arePixelsSimilar(draftPixels, x, y, j, i) {
+			if !operation.arePixelsSimilar(x, operation.RowIndex, j, i) {
 				return true
 			}
 		}
@@ -207,18 +240,19 @@ func isSupersamplingRequired(draftPixels [][]shading.Color, x, y, numAdjacent in
 	return false
 }
 
-func arePixelsSimilar(draftPixels [][]shading.Color, xA, yA, xB, yB int) bool {
-	height := len(draftPixels)
+// Returns true if the two pixels at the given locations are within the defined threshold of color similarity.
+func (operation *RaytraceRowOperation) arePixelsSimilar(xA, yA, xB, yB int) bool {
+	height := len(operation.RoughPassPixels)
 	if height == 0 {
 		return true
 	}
-	width := len(draftPixels[0])
+	width := len(operation.RoughPassPixels[0])
 	if xA < 0 || xA >= width || xB < 0 || xB >= width || yA < 0 || yA >= height || yB < 0 || yB >= height {
 		return true
 	}
 
-	pixelA := draftPixels[yA][xA]
-	pixelB := draftPixels[yB][xB]
+	pixelA := operation.RoughPassPixels[yA][xA]
+	pixelB := operation.RoughPassPixels[yB][xB]
 	return math.Abs(pixelA.R-pixelB.R) <= colorThreshold && math.Abs(pixelA.G-pixelB.G) <= colorThreshold &&
 		math.Abs(pixelA.B-pixelB.B) <= colorThreshold
 }

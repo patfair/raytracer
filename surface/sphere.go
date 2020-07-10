@@ -84,7 +84,3 @@ func (sphere Sphere) ToTextureCoordinates(point geometry.Point) (float64, float6
 	phi := math.Acos(w / r)
 	return theta, phi
 }
-
-func (sphere Sphere) Center() geometry.Point {
-	return sphere.center
-}

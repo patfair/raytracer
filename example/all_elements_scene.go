@@ -1,26 +1,41 @@
-package main
+// Copyright 2020 Patrick Fairbank. All Rights Reserved.
+
+package example
 
 import (
 	"github.com/patfair/raytracer/geometry"
 	"github.com/patfair/raytracer/light"
+	"github.com/patfair/raytracer/render"
 	"github.com/patfair/raytracer/shading"
 	"github.com/patfair/raytracer/surface"
 	"math"
 )
 
-func AllElementsScene() (*Scene, *Camera, error) {
+// Creates a scene with pretty much every possible element type in a corner defined by three perpendicular planes.
+func AllElementsScene() (*render.Scene, error) {
+	camera, err := render.NewCamera(geometry.Ray{geometry.Point{10, 10, 5}, geometry.Vector{-10, -10, -5}},
+		geometry.Vector{-10, -10, 40}, 30, 0, 1, 1, 2)
+	if err != nil {
+		return nil, err
+	}
+
+	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0.1, 0.8, 1}}
+
 	yzPlane, err := surface.NewPlane(
 		geometry.Point{0, 0, 0},
 		geometry.Vector{0, 4, 0},
 		geometry.Vector{0, 0, 2},
 		shading.ShadingProperties{
-			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.1, 0.1}, shading.Color{0.8, 0.8, 0.8}, 1, 0.5},
-			Opacity:        1,
+			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.1, 0.1}, shading.Color{0.8, 0.8, 0.8}, 1,
+				0.5},
+			Opacity: 1,
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(yzPlane)
+
 	xzPlane, err := surface.NewPlane(
 		geometry.Point{0, 0, 0},
 		geometry.Vector{4, 0, 0},
@@ -31,20 +46,25 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(xzPlane)
+
 	xyPlane, err := surface.NewPlane(
 		geometry.Point{0, 0, 0},
 		geometry.Vector{4, 0, 0},
 		geometry.Vector{0, 10, 0},
 		shading.ShadingProperties{
-			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.9, 0.9}, shading.Color{0.2, 0.2, 0.2}, 0.3, 0.3},
-			Opacity:        1,
+			DiffuseTexture: shading.CheckerboardTexture{shading.Color{0.9, 0.9, 0.9}, shading.Color{0.2, 0.2, 0.2}, 0.3,
+				0.3},
+			Opacity: 1,
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(xyPlane)
+
 	mirrorSphere, err := surface.NewSphere(
 		geometry.Point{1.5, 1.5, 0.75},
 		0.5,
@@ -59,8 +79,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(mirrorSphere)
+
 	checkerboardSphere, err := surface.NewSphere(
 		geometry.Point{1, 4.4, 1},
 		0.3,
@@ -80,12 +102,14 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(checkerboardSphere)
+
 	checkerboardDisc, err := surface.NewDisc(
 		geometry.Point{3, 1, 0.5},
 		geometry.Vector{0.5, 0, 0},
-		geometry.Vector{0, 1, 0},
+		geometry.Vector{0, 0.5, 0},
 		shading.ShadingProperties{
 			DiffuseTexture: shading.CheckerboardTexture{
 				Color1: shading.Color{0.9, 0.8, 0.4},
@@ -97,12 +121,14 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(checkerboardDisc)
+
 	mirrorDisc, err := surface.NewDisc(
 		geometry.Point{2, 2, 0.1},
 		geometry.Vector{1.5, 0, 0},
-		geometry.Vector{0, 1, 0},
+		geometry.Vector{0, 1.5, 0},
 		shading.ShadingProperties{
 			DiffuseTexture:    shading.SolidTexture{shading.Color{0, 0, 0}},
 			SpecularExponent:  100,
@@ -112,8 +138,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddSurface(mirrorDisc)
+
 	goldCubePlanes, err := surface.NewBox(
 		geometry.Point{1, 3, 0.75},
 		geometry.Vector{0, 0.5, 0.5},
@@ -128,8 +156,12 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	for _, plane := range goldCubePlanes {
+		scene.AddSurface(plane)
+	}
+
 	boxPlanes, err := surface.NewBox(
 		geometry.Point{2.5, 4.3, 0.1},
 		geometry.Vector{-0.8, 0.6, 0},
@@ -145,23 +177,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		},
 	)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	surfaces := []surface.Surface{
-		yzPlane,
-		xzPlane,
-		xyPlane,
-		mirrorSphere,
-		checkerboardSphere,
-		checkerboardDisc,
-		mirrorDisc,
-	}
-	for _, plane := range goldCubePlanes {
-		surfaces = append(surfaces, plane)
+		return nil, err
 	}
 	for _, plane := range boxPlanes {
-		surfaces = append(surfaces, plane)
+		scene.AddSurface(plane)
 	}
 
 	light1, err := light.NewDistantLight(
@@ -172,8 +191,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		1,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddLight(light1)
+
 	light2, err := light.NewDistantLight(
 		geometry.Vector{-10, -10, -25},
 		shading.Color{1, 1, 1},
@@ -182,8 +203,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		1,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddLight(light2)
+
 	light3, err := light.NewDistantLight(
 		geometry.Vector{-11, -9, -20},
 		shading.Color{1, 1, 1},
@@ -192,8 +215,10 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		1,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
+	scene.AddLight(light3)
+
 	light4, err := light.NewPointLight(
 		geometry.Point{5, 1, 10},
 		shading.Color{1, 1, 1},
@@ -202,12 +227,9 @@ func AllElementsScene() (*Scene, *Camera, error) {
 		1,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	lights := []light.Light{light1, light2, light3, light4}
+	scene.AddLight(light4)
 
-	camera, err := NewCamera(geometry.Ray{geometry.Point{10, 10, 5}, geometry.Vector{-10, -10, -5}},
-		geometry.Vector{-10, -10, 40}, 3840, 2160, 30, 0, 0, 1, 2)
-
-	return &Scene{Surfaces: surfaces, Lights: lights, BackgroundColor: shading.Color{0.1, 0.8, 1}}, camera, err
+	return &scene, nil
 }

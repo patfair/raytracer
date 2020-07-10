@@ -21,7 +21,6 @@ func TestNewSphere(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, shadingProperties, sphere.ShadingProperties())
-	assert.Equal(t, geometry.Point{0, 0, 0}, sphere.Center())
 }
 
 func TestNewSphereInvalid(t *testing.T) {
