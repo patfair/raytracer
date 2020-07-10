@@ -31,13 +31,13 @@ func NewDisc(center geometry.Point, width geometry.Vector, height geometry.Vecto
 }
 
 func (disc Disc) Intersection(ray geometry.Ray) *geometry.Intersection {
-	denominator := disc.plane.normal().Dot(ray.Direction.ToUnit())
+	denominator := disc.plane.normal.Dot(ray.Direction.ToUnit())
 	if denominator == 0 {
 		// The ray is parallel to the plane; they do not intersect.
 		return nil
 	}
 
-	distance := ray.Origin.VectorTo(disc.plane.bottomLeftCorner).Dot(disc.plane.normal()) / denominator
+	distance := ray.Origin.VectorTo(disc.plane.bottomLeftCorner).Dot(disc.plane.normal) / denominator
 	if distance < 0 {
 		// The plane is behind the ray.
 		return nil
@@ -52,7 +52,7 @@ func (disc Disc) Intersection(ray geometry.Ray) *geometry.Intersection {
 	intersection := new(geometry.Intersection)
 	intersection.Distance = distance
 	intersection.Point = point
-	intersection.Normal = disc.plane.normal()
+	intersection.Normal = disc.plane.normal
 	if intersection.Normal.Dot(ray.Direction) > 0 {
 		intersection.Normal = intersection.Normal.Multiply(-1)
 	}

@@ -19,7 +19,7 @@ func NewBox(frontBottomLeftCorner geometry.Point, width, height geometry.Vector,
 		return [6]Plane{}, err
 	}
 
-	depthVector := front.normal().Multiply(depth)
+	depthVector := front.normal.Multiply(depth)
 	backTopRightCorner := frontBottomLeftCorner.Translate(width).Translate(height).Translate(depthVector)
 
 	bottom, _ := NewPlane(frontBottomLeftCorner, depthVector, width, shadingProperties)

@@ -13,6 +13,7 @@ type Plane struct {
 	bottomLeftCorner  geometry.Point  // Point representing the bottom left corner of the plane
 	width             geometry.Vector // Direction and size of the plane extending "right" from the corner
 	height            geometry.Vector // Direction and size of the plane extending "up" from the corner
+	normal            geometry.Vector // Unit vector representing the direction normal to the surface of the plane
 	shadingProperties shading.ShadingProperties
 }
 
@@ -30,18 +31,19 @@ func NewPlane(bottomLeftCorner geometry.Point, width, height geometry.Vector,
 		bottomLeftCorner:  bottomLeftCorner,
 		width:             width,
 		height:            height,
+		normal:            width.Cross(height).ToUnit(),
 		shadingProperties: shadingProperties,
 	}, nil
 }
 
 func (plane Plane) Intersection(ray geometry.Ray) *geometry.Intersection {
-	denominator := plane.normal().Dot(ray.Direction.ToUnit())
+	denominator := plane.normal.Dot(ray.Direction.ToUnit())
 	if denominator == 0 {
 		// The ray is parallel to the plane; they do not intersect.
 		return nil
 	}
 
-	distance := ray.Origin.VectorTo(plane.bottomLeftCorner).Dot(plane.normal()) / denominator
+	distance := ray.Origin.VectorTo(plane.bottomLeftCorner).Dot(plane.normal) / denominator
 	if distance < 0 {
 		// The plane is behind the ray.
 		return nil
@@ -56,8 +58,8 @@ func (plane Plane) Intersection(ray geometry.Ray) *geometry.Intersection {
 	intersection := new(geometry.Intersection)
 	intersection.Distance = distance
 	intersection.Point = point
-	intersection.Normal = plane.normal()
-	if intersection.Normal.Dot(ray.Direction) > 0 {
+	intersection.Normal = plane.normal
+	if denominator > 0 {
 		intersection.Normal = intersection.Normal.Multiply(-1)
 	}
 
@@ -81,9 +83,4 @@ func (plane Plane) isPointWithinLimits(point geometry.Point) bool {
 	width := plane.width.Norm()
 	height := plane.height.Norm()
 	return u >= 0 && u <= width && v >= 0 && v <= height
-}
-
-// Returns a unit vector representing the direction that is normal to the plane's surface.
-func (plane Plane) normal() geometry.Vector {
-	return plane.width.Cross(plane.height).ToUnit()
 }

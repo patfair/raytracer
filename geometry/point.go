@@ -30,9 +30,9 @@ func (point Point) Translate(vector Vector) Point {
 // Returns a vector that represents the translation from this point to the given other point.
 func (point Point) VectorTo(other Point) Vector {
 	return Vector{
-		other.X - point.X,
-		other.Y - point.Y,
-		other.Z - point.Z,
+		X: other.X - point.X,
+		Y: other.Y - point.Y,
+		Z: other.Z - point.Z,
 	}
 }
 

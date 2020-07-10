@@ -11,3 +11,7 @@ type SolidTexture struct {
 func (texture SolidTexture) AlbedoAt(u, v float64) Color {
 	return texture.Color
 }
+
+func (texture SolidTexture) NeedsTextureCoordinates() bool {
+	return false
+}

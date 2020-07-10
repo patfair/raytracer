@@ -6,4 +6,7 @@ package shading
 type Texture interface {
 	// Returns the diffuse color that the texture should have at the given point in texture coordinates.
 	AlbedoAt(u, v float64) Color
+
+	// Returns whether the specific texture implementation is independent of coordinates.
+	NeedsTextureCoordinates() bool
 }

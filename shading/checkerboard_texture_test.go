@@ -13,6 +13,7 @@ func TestCheckerboardTexture_AlbedoAt(t *testing.T) {
 	uPitch := 1.0
 	vPitch := 2.0
 	texture := CheckerboardTexture{color1, color2, uPitch, vPitch}
+	assert.True(t, texture.NeedsTextureCoordinates())
 
 	assert.Equal(t, color1, texture.AlbedoAt(0.1, 0.1))
 	assert.Equal(t, color1, texture.AlbedoAt(0.4, 0.1))

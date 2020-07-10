@@ -22,6 +22,10 @@ func (texture CheckerboardTexture) AlbedoAt(u, v float64) Color {
 	return texture.Color2
 }
 
+func (texture CheckerboardTexture) NeedsTextureCoordinates() bool {
+	return true
+}
+
 // Calculates the pitch fraction of the given position and returns true if it appears in the first half, and false if in
 // the second half.
 func getToggleValue(position, pitch float64) bool {

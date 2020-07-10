@@ -21,7 +21,7 @@ func TestNewPlane(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, shadingProperties, plane.ShadingProperties())
-	assert.Equal(t, geometry.Vector{0, 0, 1}, plane.normal())
+	assert.Equal(t, geometry.Vector{0, 0, 1}, plane.normal)
 }
 
 func TestNewPlaneInvalid(t *testing.T) {
@@ -99,4 +99,24 @@ func TestPlane_ToTextureCoordinates(t *testing.T) {
 	u, v = plane.ToTextureCoordinates(geometry.Point{4.5, -2, -0.1})
 	assert.Equal(t, 3.5, u)
 	assert.Equal(t, 3.1, v)
+}
+
+func BenchmarkPlane_IntersectionHit(b *testing.B) {
+	plane, _ := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
+		shading.ShadingProperties{Opacity: 1})
+	ray := geometry.Ray{geometry.Point{0, 1, 1.5}, geometry.Vector{0, 0, -1}}
+
+	for n := 0; n < b.N; n++ {
+		plane.Intersection(ray)
+	}
+}
+
+func BenchmarkPlane_IntersectionMiss(b *testing.B) {
+	plane, _ := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
+		shading.ShadingProperties{Opacity: 1})
+	ray := geometry.Ray{geometry.Point{0, -1, 1.5}, geometry.Vector{0, 0, -1}}
+
+	for n := 0; n < b.N; n++ {
+		plane.Intersection(ray)
+	}
 }

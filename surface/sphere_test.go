@@ -110,6 +110,24 @@ func TestSphere_ToTextureCoordinates(t *testing.T) {
 	assert.Equal(t, 3*math.Pi/4, phi)
 }
 
+func BenchmarkSphere_IntersectionHit(b *testing.B) {
+	sphere := newTestSphere(geometry.Point{2, 0, 0}, 3)
+	ray := geometry.Ray{geometry.Point{-4.5, 0, 0}, geometry.Vector{1, 0, 0}}
+
+	for n := 0; n < b.N; n++ {
+		sphere.Intersection(ray)
+	}
+}
+
+func BenchmarkSphere_IntersectionMiss(b *testing.B) {
+	sphere := newTestSphere(geometry.Point{2, 0, 0}, 3)
+	ray := geometry.Ray{geometry.Point{-4.5, 50, 100}, geometry.Vector{1, 0, 0}}
+
+	for n := 0; n < b.N; n++ {
+		sphere.Intersection(ray)
+	}
+}
+
 func newTestSphere(point geometry.Point, radius float64) Sphere {
 	sphere, _ := NewSphere(point, radius, geometry.Vector{0, 0, 1}, geometry.Vector{1, 0, 0},
 		shading.ShadingProperties{Opacity: 1})

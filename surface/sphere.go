@@ -13,8 +13,9 @@ import (
 type Sphere struct {
 	center            geometry.Point  // Point at which the sphere is centered
 	radius            float64         // Radius of the sphere
-	zenithReference   geometry.Vector // For texture mapping, vector representing the axis of rotation
-	azimuthReference  geometry.Vector // For texture mapping, vector pointing to a start point along the equator
+	uDirection        geometry.Vector // For texture mapping, vector representing the axis of rotation
+	wDirection        geometry.Vector // For texture mapping, vector pointing to a start point along the equator
+	vDirection        geometry.Vector // For texture mapping, vector normal to the other two
 	shadingProperties shading.ShadingProperties
 }
 
@@ -31,11 +32,14 @@ func NewSphere(center geometry.Point, radius float64, zenithReference, azimuthRe
 		return Sphere{}, errors.New("zenith and azimuth references must be perpendicular")
 	}
 
+	uDirection := azimuthReference.ToUnit()
+	wDirection := zenithReference.ToUnit()
 	return Sphere{
 		center:            center,
 		radius:            radius,
-		zenithReference:   zenithReference,
-		azimuthReference:  azimuthReference,
+		uDirection:        uDirection,
+		wDirection:        wDirection,
+		vDirection:        wDirection.Cross(uDirection),
 		shadingProperties: shadingProperties,
 	}, nil
 }
@@ -74,12 +78,9 @@ func (sphere Sphere) ShadingProperties() shading.ShadingProperties {
 func (sphere Sphere) ToTextureCoordinates(point geometry.Point) (float64, float64) {
 	// Convert first to rectangular coordinates relative to the zenith and azimuth.
 	vector := sphere.center.VectorTo(point)
-	uDirection := sphere.azimuthReference.ToUnit()
-	wDirection := sphere.zenithReference.ToUnit()
-	vDirection := wDirection.Cross(uDirection)
-	u := vector.Dot(uDirection)
-	v := vector.Dot(vDirection)
-	w := vector.Dot(wDirection)
+	u := vector.Dot(sphere.uDirection)
+	v := vector.Dot(sphere.vDirection)
+	w := vector.Dot(sphere.wDirection)
 
 	// Convert rectangular to spherical coordinates.
 	r := math.Sqrt(u*u + v*v + w*w)

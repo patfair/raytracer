@@ -10,6 +10,7 @@ import (
 func TestSolidTexture_AlbedoAt(t *testing.T) {
 	color := Color{0.3, 0.5, 0.7}
 	texture := SolidTexture{color}
+	assert.False(t, texture.NeedsTextureCoordinates())
 
 	assert.Equal(t, color, texture.AlbedoAt(0, 0))
 	assert.Equal(t, color, texture.AlbedoAt(-1, 5))

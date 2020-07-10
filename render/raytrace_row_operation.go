@@ -197,7 +197,12 @@ func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, d
 						numSamples).Multiply(-1).Dot(closestIntersection.Normal)
 					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
 						transparency / float64(numSamples)
-					u, v := closestSurface.ToTextureCoordinates(closestIntersection.Point)
+					var u, v float64
+					if closestSurface.ShadingProperties().DiffuseTexture.NeedsTextureCoordinates() {
+						// For optimization, don't bother translating coordinates if the albedo doesn't depend on them
+						// (e.g. for solid color); just use (0, 0).
+						u, v = closestSurface.ToTextureCoordinates(closestIntersection.Point)
+					}
 					diffuseColor.R += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).R / math.Pi *
 						light.Color().R * incidentLight
 					diffuseColor.G += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).G / math.Pi *

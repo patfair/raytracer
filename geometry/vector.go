@@ -22,7 +22,7 @@ func (vector Vector) Norm() float64 {
 // Returns a vector having the same direction as this one but with a magnitude of 1.
 func (vector Vector) ToUnit() Vector {
 	norm := vector.Norm()
-	if norm == 0 {
+	if norm == 0 || norm == 1 {
 		return vector
 	}
 	return Vector{vector.X / norm, vector.Y / norm, vector.Z / norm}
