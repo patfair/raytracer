@@ -12,7 +12,7 @@ import (
 )
 
 // Creates a scene with pretty much every possible element type in a corner defined by three perpendicular planes.
-func AllElementsScene() (*render.Scene, error) {
+func AllElementsScene(frame int) (*render.Scene, error) {
 	camera, err := render.NewCamera(geometry.Ray{geometry.Point{10, 10, 5}, geometry.Vector{-10, -10, -5}},
 		geometry.Vector{-10, -10, 40}, 30, 0, 1, 1, 2)
 	if err != nil {

@@ -8,13 +8,20 @@ import (
 	"github.com/patfair/raytracer/render"
 	"github.com/patfair/raytracer/shading"
 	"github.com/patfair/raytracer/surface"
+	"math"
 )
 
+const numFrames = 120
+
 // Creates a scene with a bunch of uniformly sized spheres on a flat checkerboard plane.
-func SpheresScene() (*render.Scene, error) {
+func SpheresScene(frame int) (*render.Scene, error) {
 	blueSphereCenter := geometry.Point{1, 9, 1}
+	tealSphereCenter := geometry.Point{0, 20, 1}
 	cameraOrigin := geometry.Point{0, 0, 3}
-	focalDistance := cameraOrigin.DistanceTo(blueSphereCenter)
+	startFocalDistance := cameraOrigin.DistanceTo(blueSphereCenter)
+	endFocalDistance := cameraOrigin.DistanceTo(tealSphereCenter)
+	focalDistance := startFocalDistance + (endFocalDistance-startFocalDistance)*float64(frame)/numFrames
+	focalDistance = math.Min(focalDistance, endFocalDistance)
 	camera, err := render.NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1},
 		40, 0.06, focalDistance, 25, 2)
 	if err != nil {
@@ -41,7 +48,7 @@ func SpheresScene() (*render.Scene, error) {
 	scene.AddSurface(xyPlane)
 
 	// Colored spheres
-	tealSphere, err := newSphere(geometry.Point{0, 20, 1}, shading.Color{0.1, 0.7, 1})
+	tealSphere, err := newSphere(tealSphereCenter, shading.Color{0.1, 0.7, 1})
 	if err != nil {
 		return nil, err
 	}
