@@ -11,9 +11,10 @@ import (
 
 func TestNewPlane(t *testing.T) {
 	shadingProperties := shading.ShadingProperties{
-		DiffuseTexture: shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
-		Reflectivity:   0.5,
-		Opacity:        0.9,
+		DiffuseTexture:  shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
+		Reflectivity:    0.5,
+		Opacity:         0.9,
+		RefractiveIndex: 1.1,
 	}
 	plane, err := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
 		shadingProperties)
@@ -25,17 +26,23 @@ func TestNewPlane(t *testing.T) {
 
 func TestNewPlaneInvalid(t *testing.T) {
 	_, err := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{1, 1, 1},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "must be perpendicular")
+	}
+
+	_, err = NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 1},
+		shading.ShadingProperties{SpecularExponent: -1})
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "exponent must be non-negative")
 	}
 }
 
 func TestPlane_Intersection(t *testing.T) {
 	plane1, _ := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	plane2, _ := NewPlane(geometry.Point{0, 0, 0}, geometry.Vector{0, 1, 0}, geometry.Vector{1, 0, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	ray1 := geometry.Ray{geometry.Point{0, 1, 1.5}, geometry.Vector{0, 0, -1}}
 	ray2 := geometry.Ray{geometry.Point{1, 0, 1.5}, geometry.Vector{0, 0, 1}}
 
@@ -62,9 +69,9 @@ func TestPlane_Intersection(t *testing.T) {
 
 func TestPlane_IntersectionParallel(t *testing.T) {
 	plane1, _ := NewPlane(geometry.Point{-50, -50, 0}, geometry.Vector{100, 0, 0}, geometry.Vector{0, 100, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	plane2, _ := NewPlane(geometry.Point{50, -50, -50}, geometry.Vector{-100, 100, 0}, geometry.Vector{-100, -100, 100},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	ray1 := geometry.Ray{geometry.Point{0, 0, 0}, geometry.Vector{0, -3, 0}}
 	ray2 := geometry.Ray{geometry.Point{0, 0, 0}, geometry.Vector{2, -1, -1}}
 
@@ -83,7 +90,7 @@ func TestPlane_IntersectionParallel(t *testing.T) {
 
 func TestPlane_ToTextureCoordinates(t *testing.T) {
 	plane, _ := NewPlane(geometry.Point{1, -2, 3}, geometry.Vector{5, 0, 0}, geometry.Vector{0, 0, -4},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 
 	u, v := plane.ToTextureCoordinates(geometry.Point{1, -2, 3})
 	assert.Equal(t, 0.0, u)

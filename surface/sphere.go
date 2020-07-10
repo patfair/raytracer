@@ -21,6 +21,9 @@ type Sphere struct {
 // Returns a new sphere, or an error if the parameters are invalid.
 func NewSphere(center geometry.Point, radius float64, zenithReference, azimuthReference geometry.Vector,
 	shadingProperties shading.ShadingProperties) (Sphere, error) {
+	if err := shadingProperties.Validate(); err != nil {
+		return Sphere{}, err
+	}
 	if radius <= 0 {
 		return Sphere{}, errors.New("radius must be positive")
 	}

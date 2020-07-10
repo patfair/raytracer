@@ -12,9 +12,10 @@ import (
 
 func TestNewSphere(t *testing.T) {
 	shadingProperties := shading.ShadingProperties{
-		DiffuseTexture: shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
-		Reflectivity:   0.5,
-		Opacity:        0.9,
+		DiffuseTexture:  shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
+		Reflectivity:    0.5,
+		Opacity:         0.9,
+		RefractiveIndex: 1.1,
 	}
 	sphere, err := NewSphere(geometry.Point{0, 0, 0}, 1, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
 		shadingProperties)
@@ -25,19 +26,24 @@ func TestNewSphere(t *testing.T) {
 
 func TestNewSphereInvalid(t *testing.T) {
 	_, err := NewSphere(geometry.Point{0, 0, 0}, -1, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "must be positive")
 
 	_, err = NewSphere(geometry.Point{0, 0, 0}, 0, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "must be positive")
 
 	_, err = NewSphere(geometry.Point{0, 0, 0}, 1, geometry.Vector{1, 0, 0}, geometry.Vector{1, 1, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "must be perpendicular")
+
+	_, err = NewSphere(geometry.Point{0, 0, 0}, 1, geometry.Vector{1, 0, 0}, geometry.Vector{1, 1, 0},
+		shading.ShadingProperties{Opacity: 1, Reflectivity: 2})
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "reflectivity must be in [0, 1]")
 }
 
 func TestSphere_Intersection(t *testing.T) {
@@ -106,6 +112,6 @@ func TestSphere_ToTextureCoordinates(t *testing.T) {
 
 func newTestSphere(point geometry.Point, radius float64) Sphere {
 	sphere, _ := NewSphere(point, radius, geometry.Vector{0, 0, 1}, geometry.Vector{1, 0, 0},
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	return sphere
 }

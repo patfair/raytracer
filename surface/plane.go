@@ -19,6 +19,9 @@ type Plane struct {
 // Returns a new plane, or an error if the parameters are invalid.
 func NewPlane(bottomLeftCorner geometry.Point, width, height geometry.Vector,
 	shadingProperties shading.ShadingProperties) (Plane, error) {
+	if err := shadingProperties.Validate(); err != nil {
+		return Plane{}, err
+	}
 	if width.Dot(height) != 0 {
 		return Plane{}, errors.New("plane width and height must be perpendicular")
 	}

@@ -11,9 +11,10 @@ import (
 
 func TestNewBox(t *testing.T) {
 	shadingProperties := shading.ShadingProperties{
-		DiffuseTexture: shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
-		Reflectivity:   0.5,
-		Opacity:        0.9,
+		DiffuseTexture:  shading.SolidTexture{shading.Color{0, 0.1, 0.2}},
+		Reflectivity:    0.5,
+		Opacity:         0.9,
+		RefractiveIndex: 1.1,
 	}
 	planes, err := NewBox(geometry.Point{1, 2, 3}, geometry.Vector{2, 0, 0}, geometry.Vector{0, 1, 0}, -5,
 		shadingProperties)
@@ -52,13 +53,13 @@ func TestNewBox(t *testing.T) {
 
 func TestNewBoxInvalid(t *testing.T) {
 	_, err := NewBox(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{0, 1, 0}, 0,
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "must be non-zero")
 	}
 
 	_, err = NewBox(geometry.Point{0, 0, 0}, geometry.Vector{1, 0, 0}, geometry.Vector{-1, 0, 0}, 1,
-		shading.ShadingProperties{})
+		shading.ShadingProperties{Opacity: 1})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "must be perpendicular")
 	}
