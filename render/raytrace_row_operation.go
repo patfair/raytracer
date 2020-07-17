@@ -49,6 +49,9 @@ func (operation *RaytraceRowOperation) Run() {
 		depthOfFieldSamples := camera.DepthOfFieldSamples
 		antiAliasSamples := camera.AntiAliasSamples
 		if !supersamplingRequired {
+			if operation.RenderType != RenderFinishPass {
+				depthOfFieldSamples = 1
+			}
 			antiAliasSamples = 1
 		}
 
