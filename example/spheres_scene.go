@@ -20,7 +20,7 @@ func SpheresScene(frame int) (*render.Scene, error) {
 	cameraOrigin := geometry.Point{0, 0, 3}
 	startFocalDistance := cameraOrigin.DistanceTo(blueSphereCenter)
 	endFocalDistance := cameraOrigin.DistanceTo(tealSphereCenter)
-	focalDistance := startFocalDistance + (endFocalDistance-startFocalDistance)*float64(frame)/numFrames
+	focalDistance := startFocalDistance + (endFocalDistance-startFocalDistance)*float64(frame)/(numFrames-1)
 	focalDistance = math.Min(focalDistance, endFocalDistance)
 	camera, err := render.NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1},
 		40, 0.06, focalDistance, 30, 2)
