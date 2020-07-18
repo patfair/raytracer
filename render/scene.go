@@ -4,7 +4,6 @@ package render
 
 import (
 	"errors"
-	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/patfair/raytracer/light"
 	"github.com/patfair/raytracer/shading"
@@ -20,6 +19,7 @@ type Scene struct {
 	BackgroundColor shading.Color     // Color to render for rays that do not intersect any surfaces
 	Surfaces        []surface.Surface // Surfaces in the scene that rays can intercept
 	Lights          []light.Light     // Virtual lights to illuminate surfaces in the scene and cast shadows
+	ShadowSamples   int               // The number of samples that should be used for producing soft shadows.
 }
 
 func (scene *Scene) AddSurface(surface surface.Surface) {
@@ -36,18 +36,7 @@ func (scene *Scene) Render(renderType RenderType, width, height int) (*image.RGB
 		return nil, errors.New("width and height must be positive numbers")
 	}
 
-	// Unless configured not to, produce a draft image at the same resolution without any multi-pass features, to be
-	// used during the final rendering pass to avoid doing expensive multi-pass ray casting for pixels that don't need
-	// it.
-	var roughPassPixels [][]shading.Color
-	if renderType == RenderFinishPass {
-		fmt.Println("Producing draft image for mapping optimizations...")
-		roughPassPixels = scene.renderPixels(RenderPreFinishRoughPass, width, height, [][]shading.Color{})
-		fmt.Println()
-	}
-
-	fmt.Println("Producing final image...")
-	pixels := scene.renderPixels(renderType, width, height, roughPassPixels)
+	pixels := scene.renderPixels(renderType, width, height)
 	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
@@ -59,8 +48,7 @@ func (scene *Scene) Render(renderType RenderType, width, height int) (*image.RGB
 }
 
 // Executes the raytracing algorithm on the scene and returns the result as a two-dimensional array of pixels.
-func (scene *Scene) renderPixels(renderType RenderType, width, height int,
-	roughPassPixels [][]shading.Color) [][]shading.Color {
+func (scene *Scene) renderPixels(renderType RenderType, width, height int) [][]shading.Color {
 	// Set up progress bar for the console.
 	progress := pb.Full.Start(width * height)
 
@@ -89,15 +77,14 @@ func (scene *Scene) renderPixels(renderType RenderType, width, height int,
 	for i := 0; i < height; i++ {
 		// Shuffle the operations to make progress more linear and predicted end time more accurate.
 		operations[shufflePositions[i]] = RaytraceRowOperation{
-			Scene:           scene,
-			RenderType:      renderType,
-			Width:           width,
-			Height:          height,
-			RowIndex:        i,
-			RoughPassPixels: roughPassPixels,
-			OutputPixels:    outputPixels,
-			Progress:        progress,
-			DoneChannel:     doneChannel,
+			Scene:        scene,
+			RenderType:   renderType,
+			Width:        width,
+			Height:       height,
+			RowIndex:     i,
+			OutputPixels: outputPixels,
+			Progress:     progress,
+			DoneChannel:  doneChannel,
 		}
 	}
 

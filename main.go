@@ -23,7 +23,7 @@ func main() {
 
 	renderType := render.RenderFinishPass
 	if *draft {
-		renderType = render.RenderRoughPassOnly
+		renderType = render.RenderDraftPass
 	}
 	if *outputFilename == "" {
 		handleError(errors.New("must specify output path"))

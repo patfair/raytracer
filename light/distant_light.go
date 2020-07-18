@@ -16,22 +16,15 @@ type DistantLight struct {
 	color              shading.Color
 	intensity          float64 // Fixed intensity of the light rays leaving the light source
 	directionVariation float64 // Value in [0, 1] by which each component of the direction can be randomly varied
-	numSamples         int
 }
 
-func NewDistantLight(direction geometry.Vector, color shading.Color, intensity float64, directionVariation float64,
-	numSamples int) (DistantLight, error) {
+func NewDistantLight(direction geometry.Vector, color shading.Color, intensity float64,
+	directionVariation float64) (DistantLight, error) {
 	if intensity <= 0 {
 		return DistantLight{}, errors.New("intensity must be positive")
 	}
 	if directionVariation < 0 || directionVariation > 1 {
 		return DistantLight{}, errors.New("direction variation must be in [0, 1]")
-	}
-	if numSamples < 1 {
-		return DistantLight{}, errors.New("number of samples must be at least 1")
-	}
-	if directionVariation == 0 && numSamples > 1 {
-		return DistantLight{}, errors.New("directionVariation must be non-zero if number of samples is greater than 1")
 	}
 
 	return DistantLight{
@@ -39,7 +32,6 @@ func NewDistantLight(direction geometry.Vector, color shading.Color, intensity f
 		color:              color,
 		intensity:          intensity,
 		directionVariation: directionVariation,
-		numSamples:         numSamples,
 	}, nil
 }
 
@@ -64,10 +56,6 @@ func (light DistantLight) Color() shading.Color {
 
 func (light DistantLight) Intensity(point geometry.Point) float64 {
 	return light.intensity
-}
-
-func (light DistantLight) NumSamples() int {
-	return light.numSamples
 }
 
 func (light DistantLight) IsBlockedByIntersection(point geometry.Point, intersection *geometry.Intersection) bool {

@@ -31,11 +31,6 @@ The raytracer can produce a "depth of field" effect (blurred foreground/backgrou
 non-zero-radius aperture and a finite focal distance; multiple rays are cast back from the focal plane through random
 points in the aperture, and the results are averaged together.
 
-#### Basic optimization
-To try to save some render time by not doing supersampling when its not necessary, the algorithm first renders a draft
-image at full resolution but without any of the features that require casting multiple rays per pixel. In the second,
-and final, pass it uses this image to determine where the edges are (i.e. where anti-aliasing is necessary).
-
 #### Parallel processing
 The rendering algorithm divides the image into multiple work units and distributes them across a pool of worker
 goroutines, using channels for coordination.
@@ -44,8 +39,8 @@ goroutines, using channels for coordination.
 Some of the obvious features this raytracer doesn't support are:
 * Reflections of lights off of reflective surfaces
 * Refraction of shadow rays (rays cast from a shaded point to a light source)
-* Sophisticated performance optimizations (currently, rendering a 4K version of the scene above takes more than 12
-hours on a quad-core PC)
+* Performance optimizations to not supersample pixels that don't need it (currently, rendering a 4K version of the scene
+above takes several hours on a quad-core PC)
 
 ### Acknowledgements
 I found the articles at [scratchapixel.com](https://www.scratchapixel.com/) really helpful for understanding many of the

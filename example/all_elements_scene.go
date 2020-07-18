@@ -188,7 +188,6 @@ func AllElementsScene(frame int) (*render.Scene, error) {
 		shading.Color{1, 1, 1},
 		0.75,
 		0,
-		1,
 	)
 	if err != nil {
 		return nil, err
@@ -200,7 +199,6 @@ func AllElementsScene(frame int) (*render.Scene, error) {
 		shading.Color{1, 1, 1},
 		0.75,
 		0,
-		1,
 	)
 	if err != nil {
 		return nil, err
@@ -212,7 +210,6 @@ func AllElementsScene(frame int) (*render.Scene, error) {
 		shading.Color{1, 1, 1},
 		0.75,
 		0,
-		1,
 	)
 	if err != nil {
 		return nil, err
@@ -224,7 +221,6 @@ func AllElementsScene(frame int) (*render.Scene, error) {
 		shading.Color{1, 1, 1},
 		1000,
 		0,
-		1,
 	)
 	if err != nil {
 		return nil, err

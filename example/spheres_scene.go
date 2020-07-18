@@ -12,6 +12,7 @@ import (
 )
 
 const numFrames = 120
+const numSamples = 100
 
 // Creates a scene with a bunch of uniformly sized spheres on a flat checkerboard plane.
 func SpheresScene(frame int) (*render.Scene, error) {
@@ -23,12 +24,12 @@ func SpheresScene(frame int) (*render.Scene, error) {
 	focalDistance := startFocalDistance + (endFocalDistance-startFocalDistance)*float64(frame)/(numFrames-1)
 	focalDistance = math.Min(focalDistance, endFocalDistance)
 	camera, err := render.NewCamera(geometry.Ray{cameraOrigin, geometry.Vector{0, 1, -0.2}}, geometry.Vector{0, 0.2, 1},
-		40, 0.06, focalDistance, 30, 2)
+		40, 0.06, focalDistance, numSamples, 2)
 	if err != nil {
 		return nil, err
 	}
 
-	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0, 0, 0}}
+	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0, 0, 0}, ShadowSamples: numSamples}
 
 	// Floor plane
 	xyPlane, err := surface.NewPlane(
@@ -135,7 +136,6 @@ func SpheresScene(frame int) (*render.Scene, error) {
 		shading.Color{1, 1, 0.8},
 		30000,
 		2,
-		20,
 	)
 	if err != nil {
 		return nil, err

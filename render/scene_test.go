@@ -20,7 +20,7 @@ func TestScene(t *testing.T) {
 
 	scene := Scene{Camera: camera, BackgroundColor: backgroundColor}
 
-	distantLight, err := light.NewDistantLight(geometry.Vector{0, 0, -1}, shading.Color{1, 1, 0}, 1, 0.1, 2)
+	distantLight, err := light.NewDistantLight(geometry.Vector{0, 0, -1}, shading.Color{1, 1, 0}, 1, 0.1)
 	assert.Nil(t, err)
 	scene.AddLight(distantLight)
 
@@ -37,11 +37,11 @@ func TestScene(t *testing.T) {
 	assert.Nil(t, err)
 	scene.AddSurface(plane)
 
-	_, err = scene.Render(RenderRoughPassOnly, -1, 3)
+	_, err = scene.Render(RenderDraftPass, -1, 3)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "must be positive")
 	}
-	_, err = scene.Render(RenderRoughPassOnly, 5, 0)
+	_, err = scene.Render(RenderDraftPass, 5, 0)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "must be positive")
 	}

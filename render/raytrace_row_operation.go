@@ -21,8 +21,7 @@ const (
 type RenderType int
 
 const (
-	RenderRoughPassOnly RenderType = iota
-	RenderPreFinishRoughPass
+	RenderDraftPass RenderType = iota
 	RenderFinishPass
 )
 
@@ -42,36 +41,37 @@ type RaytraceRowOperation struct {
 // Executes the rendering operation synchronously.
 func (operation *RaytraceRowOperation) Run() {
 	camera := operation.Scene.Camera
-	for j := 0; j < operation.Width; j++ {
-		// Disable multi-pass ray casting if only doing a rough pass.
-		supersamplingRequired := operation.RenderType == RenderFinishPass &&
-			operation.isSupersamplingRequired(j, adjacentPixels)
-		depthOfFieldSamples := camera.DepthOfFieldSamples
-		antiAliasSamples := camera.AntiAliasSamples
-		if !supersamplingRequired {
-			if operation.RenderType != RenderFinishPass {
-				depthOfFieldSamples = 1
-			}
-			antiAliasSamples = 1
-		}
+	numDirectionalSamples := 1
+	numTotalSamples := 1
+	if operation.RenderType == RenderFinishPass {
+		depthOfFieldSamples := float64(camera.DepthOfFieldSamples)
+		antiAliasSamples := float64(camera.AntiAliasSamples * camera.AntiAliasSamples)
+		shadowSamples := float64(operation.Scene.ShadowSamples)
+		maxSamples := math.Max(math.Max(depthOfFieldSamples, antiAliasSamples), shadowSamples)
 
+		// Round down to a perfect square, to be compatible with anti-aliasing.
+		numDirectionalSamples = int(math.Sqrt(maxSamples))
+		numTotalSamples = numDirectionalSamples * numDirectionalSamples
+	}
+
+	for j := 0; j < operation.Width; j++ {
 		// Supersample and average together multiple rays for each pixel for depth of field and antialiasing.
 		var averagePixel shading.Color
-		for n := 0; n < depthOfFieldSamples; n++ {
-			for a := 0; a < antiAliasSamples; a++ {
-				for b := 0; b < antiAliasSamples; b++ {
-					ray := camera.GetRay(operation.Width, operation.Height, j, operation.RowIndex, n,
-						depthOfFieldSamples, a, b, antiAliasSamples)
-					pixel := operation.castRay(operation.Scene, ray, 0, 1, supersamplingRequired)
-					averagePixel.R += pixel.R
-					averagePixel.G += pixel.G
-					averagePixel.B += pixel.B
-				}
+		n := 0
+		for a := 0; a < numDirectionalSamples; a++ {
+			for b := 0; b < numDirectionalSamples; b++ {
+				ray := camera.GetRay(operation.Width, operation.Height, j, operation.RowIndex, n, numTotalSamples, a, b,
+					numDirectionalSamples)
+				n++
+				pixel := operation.castRay(operation.Scene, ray, 0, 1, n, numTotalSamples)
+				averagePixel.R += pixel.R
+				averagePixel.G += pixel.G
+				averagePixel.B += pixel.B
 			}
 		}
-		averagePixel.R /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
-		averagePixel.G /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
-		averagePixel.B /= float64(depthOfFieldSamples * antiAliasSamples * antiAliasSamples)
+		averagePixel.R /= float64(numTotalSamples)
+		averagePixel.G /= float64(numTotalSamples)
+		averagePixel.B /= float64(numTotalSamples)
 
 		operation.OutputPixels[operation.RowIndex][j] = averagePixel
 		operation.Progress.Increment()
@@ -83,7 +83,7 @@ func (operation *RaytraceRowOperation) Run() {
 
 // Returns the color that the given ray is pointing at. Contains the main logic of the raytracer.
 func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, depth int, refractionIndex float64,
-	supersamplingRequired bool) shading.Color {
+	sampleIndex int, numSamples int) shading.Color {
 	pixelColor := scene.BackgroundColor
 
 	// Limit recursion caused by reflecting rays off multiple surfaces.
@@ -146,7 +146,7 @@ func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, d
 
 			refractedRay := geometry.Ray{refractionPoint, refractionDirection.ToUnit()}
 			refractedColor = operation.castRay(scene, refractedRay, depth+1, shadingProperties.RefractiveIndex,
-				supersamplingRequired)
+				sampleIndex, numSamples)
 		}
 
 		// Determine the component of the ray from light reflected off a mirrored surface.
@@ -157,68 +157,61 @@ func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, d
 			reflectedPoint := closestIntersection.Point.Translate(closestIntersection.Normal.Multiply(reflectionBias))
 
 			reflectedRay := geometry.Ray{reflectedPoint, reflectedDirection.ToUnit()}
-			reflectedColor = operation.castRay(scene, reflectedRay, depth+1, refractionIndex, supersamplingRequired)
+			reflectedColor = operation.castRay(scene, reflectedRay, depth+1, refractionIndex, sampleIndex, numSamples)
 		}
 
 		// Determine the component of the ray from the scene's lights directly illuminating the surface.
 		if kDiffuse > 0 || kSpecular > 0 {
 			for _, light := range scene.Lights {
-				// Cast multiple slightly different rays from the same light to simulate soft shadows, if enabled for
-				// the light and not doing a draft render.
-				numSamples := light.NumSamples()
-				if operation.RenderType == RenderRoughPassOnly || !supersamplingRequired {
-					numSamples = 1
+				lightDirection := light.Direction(closestIntersection.Point, sampleIndex, numSamples)
+
+				// Check if there is an object between the intersection point and the light source, in which case
+				// it should cast a shadow.
+				lightRay := geometry.Ray{
+					Origin:    closestIntersection.Point,
+					Direction: lightDirection.Multiply(-1).ToUnit(),
 				}
-				for i := 0; i < numSamples; i++ {
-					// Check if there is an object between the intersection point and the light source, in which case
-					// it should cast a shadow.
-					lightRay := geometry.Ray{
-						Origin:    closestIntersection.Point,
-						Direction: light.Direction(closestIntersection.Point, i, numSamples).Multiply(-1).ToUnit(),
-					}
-					transparency := 1.0
-					for _, surface := range scene.Surfaces {
-						if intersection := surface.Intersection(lightRay); intersection != nil {
-							// Require a minimum distance to prevent floating-point imprecision causing a surface to
-							// cast a shadow on itself.
-							if intersection.Distance > shadowBias {
-								if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
-									transparency *= 1 - surface.ShadingProperties().Opacity
-								}
+				transparency := 1.0
+				for _, surface := range scene.Surfaces {
+					if intersection := surface.Intersection(lightRay); intersection != nil {
+						// Require a minimum distance to prevent floating-point imprecision causing a surface to
+						// cast a shadow on itself.
+						if intersection.Distance > shadowBias {
+							if light.IsBlockedByIntersection(closestIntersection.Point, intersection) {
+								transparency *= 1 - surface.ShadingProperties().Opacity
 							}
 						}
 					}
-					if transparency == 0 {
-						// The light is not reaching the intersection point at all; skip calculating its component color
-						// from this light source since it will just be black.
-						continue
-					}
-
-					// Calculate the diffuse component, influenced by the color of the surface itself.
-					incidentDotProduct := light.Direction(closestIntersection.Point, i,
-						numSamples).Multiply(-1).Dot(closestIntersection.Normal)
-					incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
-						transparency / float64(numSamples)
-					var u, v float64
-					if closestSurface.ShadingProperties().DiffuseTexture.NeedsTextureCoordinates() {
-						// For optimization, don't bother translating coordinates if the albedo doesn't depend on them
-						// (e.g. for solid color); just use (0, 0).
-						u, v = closestSurface.ToTextureCoordinates(closestIntersection.Point)
-					}
-					diffuseColor.R += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).R / math.Pi *
-						light.Color().R * incidentLight
-					diffuseColor.G += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).G / math.Pi *
-						light.Color().G * incidentLight
-					diffuseColor.B += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).B / math.Pi *
-						light.Color().B * incidentLight
-
-					// Calculate specular reflection.
-					specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
-						shadingProperties.SpecularExponent) / float64(numSamples)
-					specularColor.R += light.Color().R * specularIntensity
-					specularColor.G += light.Color().G * specularIntensity
-					specularColor.B += light.Color().B * specularIntensity
 				}
+				if transparency == 0 {
+					// The light is not reaching the intersection point at all; skip calculating its component color
+					// from this light source since it will just be black.
+					continue
+				}
+
+				// Calculate the diffuse component, influenced by the color of the surface itself.
+				incidentDotProduct := lightDirection.Multiply(-1).Dot(closestIntersection.Normal)
+				incidentLight := light.Intensity(closestIntersection.Point) * math.Max(incidentDotProduct, 0) *
+					transparency
+				var u, v float64
+				if closestSurface.ShadingProperties().DiffuseTexture.NeedsTextureCoordinates() {
+					// For optimization, don't bother translating coordinates if the albedo doesn't depend on them
+					// (e.g. for solid color); just use (0, 0).
+					u, v = closestSurface.ToTextureCoordinates(closestIntersection.Point)
+				}
+				diffuseColor.R += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).R / math.Pi *
+					light.Color().R * incidentLight
+				diffuseColor.G += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).G / math.Pi *
+					light.Color().G * incidentLight
+				diffuseColor.B += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).B / math.Pi *
+					light.Color().B * incidentLight
+
+				// Calculate specular reflection.
+				specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),
+					shadingProperties.SpecularExponent)
+				specularColor.R += light.Color().R * specularIntensity
+				specularColor.G += light.Color().G * specularIntensity
+				specularColor.B += light.Color().B * specularIntensity
 			}
 		}
 
@@ -232,34 +225,4 @@ func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, d
 	}
 
 	return pixelColor
-}
-
-// Examines the image produced by the rough pass and returns true if the given pixel needs to be supersampled in the
-// finish pass.
-func (operation *RaytraceRowOperation) isSupersamplingRequired(x, numAdjacent int) bool {
-	for i := operation.RowIndex - numAdjacent; i <= operation.RowIndex+numAdjacent; i++ {
-		for j := x - numAdjacent; j <= x+numAdjacent; j++ {
-			if !operation.arePixelsSimilar(x, operation.RowIndex, j, i) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// Returns true if the two pixels at the given locations are within the defined threshold of color similarity.
-func (operation *RaytraceRowOperation) arePixelsSimilar(xA, yA, xB, yB int) bool {
-	height := len(operation.RoughPassPixels)
-	if height == 0 {
-		return true
-	}
-	width := len(operation.RoughPassPixels[0])
-	if xA < 0 || xA >= width || xB < 0 || xB >= width || yA < 0 || yA >= height || yB < 0 || yB >= height {
-		return true
-	}
-
-	pixelA := operation.RoughPassPixels[yA][xA]
-	pixelB := operation.RoughPassPixels[yB][xB]
-	return math.Abs(pixelA.R-pixelB.R) <= colorThreshold && math.Abs(pixelA.G-pixelB.G) <= colorThreshold &&
-		math.Abs(pixelA.B-pixelB.B) <= colorThreshold
 }

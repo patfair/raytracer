@@ -20,9 +20,6 @@ type Light interface {
 	// Determines the intensity of the light incident to the given point.
 	Intensity(point geometry.Point) float64
 
-	// Returns the number of times that this light source should be sampled in order to produce soft shadows.
-	NumSamples() int
-
 	// Determines whether the given point is blocked from receiving light by the surface whose intersection with the
 	// light ray is given.
 	IsBlockedByIntersection(point geometry.Point, intersection *geometry.Intersection) bool
