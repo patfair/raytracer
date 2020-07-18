@@ -12,7 +12,8 @@ import (
 )
 
 const numFrames = 120
-const numSamples = 100
+const numSamples = 144
+const ditherVariation = 0.05
 
 // Creates a scene with a bunch of uniformly sized spheres on a flat checkerboard plane.
 func SpheresScene(frame int) (*render.Scene, error) {
@@ -29,7 +30,8 @@ func SpheresScene(frame int) (*render.Scene, error) {
 		return nil, err
 	}
 
-	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0, 0, 0}, ShadowSamples: numSamples}
+	scene := render.Scene{Camera: camera, BackgroundColor: shading.Color{0, 0, 0}, ShadowSamples: numSamples,
+		DitherVariation: ditherVariation}
 
 	// Floor plane
 	xyPlane, err := surface.NewPlane(

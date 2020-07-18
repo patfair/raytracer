@@ -14,8 +14,6 @@ const (
 	maxReflectionDepth = 20
 	reflectionBias     = 0.001
 	shadowBias         = 0.001
-	colorThreshold     = 0.01
-	adjacentPixels     = 4
 )
 
 type RenderType int
@@ -199,12 +197,10 @@ func (operation *RaytraceRowOperation) castRay(scene *Scene, ray geometry.Ray, d
 					// (e.g. for solid color); just use (0, 0).
 					u, v = closestSurface.ToTextureCoordinates(closestIntersection.Point)
 				}
-				diffuseColor.R += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).R / math.Pi *
-					light.Color().R * incidentLight
-				diffuseColor.G += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).G / math.Pi *
-					light.Color().G * incidentLight
-				diffuseColor.B += closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v).B / math.Pi *
-					light.Color().B * incidentLight
+				albedo := closestSurface.ShadingProperties().DiffuseTexture.AlbedoAt(u, v, scene.DitherVariation)
+				diffuseColor.R += albedo.R / math.Pi * light.Color().R * incidentLight
+				diffuseColor.G += albedo.G / math.Pi * light.Color().G * incidentLight
+				diffuseColor.B += albedo.B / math.Pi * light.Color().B * incidentLight
 
 				// Calculate specular reflection.
 				specularIntensity := math.Pow(math.Max(reflectedDirection.Dot(lightRay.Direction), 0),

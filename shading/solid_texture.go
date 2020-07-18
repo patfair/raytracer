@@ -2,16 +2,14 @@
 
 package shading
 
-const solidDither = 0.005
-
 // Represents a texture that has one uniform and solid diffuse color.
 type SolidTexture struct {
 	Color Color // Single solid color of the texture
 }
 
 // Returns the same solid color at all texture coordinates.
-func (texture SolidTexture) AlbedoAt(u, v float64) Color {
-	return texture.Color.Dither(solidDither)
+func (texture SolidTexture) AlbedoAt(u, v, ditherVariation float64) Color {
+	return texture.Color.Dither(ditherVariation)
 }
 
 func (texture SolidTexture) NeedsTextureCoordinates() bool {

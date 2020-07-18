@@ -20,6 +20,7 @@ type Scene struct {
 	Surfaces        []surface.Surface // Surfaces in the scene that rays can intercept
 	Lights          []light.Light     // Virtual lights to illuminate surfaces in the scene and cast shadows
 	ShadowSamples   int               // The number of samples that should be used for producing soft shadows.
+	DitherVariation float64           // How much to randomly vary colors by to prevent color banding.
 }
 
 func (scene *Scene) AddSurface(surface surface.Surface) {

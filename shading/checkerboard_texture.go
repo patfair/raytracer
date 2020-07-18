@@ -6,8 +6,6 @@ import (
 	"math"
 )
 
-const checkerboardDither = 0.005
-
 // Represents a texture that has two colors appearing in a checkerboard pattern.
 type CheckerboardTexture struct {
 	Color1 Color   // First color in the pattern
@@ -17,11 +15,11 @@ type CheckerboardTexture struct {
 }
 
 // Returns either of the texture's colors, depending on the given coordinates.
-func (texture CheckerboardTexture) AlbedoAt(u, v float64) Color {
+func (texture CheckerboardTexture) AlbedoAt(u, v, ditherVariation float64) Color {
 	if getToggleValue(u, texture.UPitch) == getToggleValue(v, texture.VPitch) {
-		return texture.Color1.Dither(checkerboardDither)
+		return texture.Color1.Dither(ditherVariation)
 	}
-	return texture.Color2.Dither(checkerboardDither)
+	return texture.Color2.Dither(ditherVariation)
 }
 
 func (texture CheckerboardTexture) NeedsTextureCoordinates() bool {
