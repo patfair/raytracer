@@ -12,6 +12,6 @@ func TestSolidTexture_AlbedoAt(t *testing.T) {
 	texture := SolidTexture{color}
 	assert.False(t, texture.NeedsTextureCoordinates())
 
-	assert.Equal(t, color, texture.AlbedoAt(0, 0))
-	assert.Equal(t, color, texture.AlbedoAt(-1, 5))
+	assertColorEqual(t, color, texture.AlbedoAt(0, 0), checkerboardDither)
+	assertColorEqual(t, color, texture.AlbedoAt(-1, 5), checkerboardDither)
 }

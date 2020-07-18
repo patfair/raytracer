@@ -5,6 +5,7 @@ package shading
 import (
 	imagecolor "image/color"
 	"math"
+	"math/rand"
 )
 
 // Represents a color with red, green, and blue floating-point components.
@@ -22,4 +23,12 @@ func (color Color) ToRgba() imagecolor.RGBA {
 		B: uint8(255 * math.Max(math.Min(color.B, 1), 0)),
 		A: 255,
 	}
+}
+
+// Returns a copy of the color with each component varied randomly up to plus or minus the given variation.
+func (color Color) Dither(variation float64) Color {
+	r := math.Max(math.Min(color.R+(2*rand.Float64()-1)*variation, 1), 0)
+	g := math.Max(math.Min(color.G+(2*rand.Float64()-1)*variation, 1), 0)
+	b := math.Max(math.Min(color.B+(2*rand.Float64()-1)*variation, 1), 0)
+	return Color{r, g, b}
 }
