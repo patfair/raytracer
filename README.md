@@ -2,7 +2,7 @@
 A toy raytracer I wrote using Go, in a fit of pandemic-induced boredom. I've never formally studied computer graphics so
 it was a neat introduction to many concepts as well as a good refresher on basic geometry and vector math.
 
-![Example render of spheres](https://example.com/example.png)
+![Example render of spheres](https://i.imgur.com/KMLxYBU.png)
 
 ### Geometric objects
 The raytracer supports the following types of scene objects:
