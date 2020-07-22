@@ -35,6 +35,13 @@ points in the aperture, and the results are averaged together.
 The rendering algorithm divides the image into multiple work units and distributes them across a pool of worker
 goroutines, using channels for coordination.
 
+#### Animation
+The binary takes a `-frame` parameter which can be used in the scene setup code to vary any parameter over time. After
+rendering each frame into a separate PNG, you can use a tool like FFmpeg to combine the separate frames into a video.
+Here's an example animation of the focal distance changing from the frontmost sphere to the rearmost sphere and back:
+
+![Example animation](https://i.imgur.com/7gSu3Z0.gif)
+
 ### Missing features
 Some of the obvious features this raytracer doesn't support are:
 * Reflections of lights off of reflective surfaces
